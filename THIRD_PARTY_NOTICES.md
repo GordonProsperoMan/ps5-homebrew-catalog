@@ -1,0 +1,13 @@
+# Third-party notices
+
+## Credits and acknowledgements
+
+| Component | Use | License |
+| --- | --- | --- |
+| [Pillow](https://python-pillow.org/) | Icon conversion at build time | MIT-CMU |
+| [Unbounded](https://fonts.google.com/specimen/Unbounded) and [DM Sans](https://fonts.google.com/specimen/DM+Sans) | Site fonts, loaded from Google Fonts | SIL Open Font License 1.1 |
+| [ShadowMountPlus](https://github.com/drakmor/ShadowMountPlus) (drakmor) | Install target described in the docs | GPL-3.0 |
+
+App names, descriptions and icons belong to their developers. Icons are
+fetched from each app's source repository, resized for the site, and shown
+under that project's license; they are removed on request.
