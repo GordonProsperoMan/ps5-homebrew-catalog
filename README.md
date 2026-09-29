@@ -12,15 +12,17 @@ and they will feed a console-side store that can install listed apps.
 
 ## How it works
 
-```text
- Developer's repository                 This repository                  Users
- ──────────────────────                 ───────────────                  ─────
- GitHub Release                         apps/<TITLEID>.json   ──build──▶  homebrew.page/ps5
-   └── <TITLEID>.zip  ◀── artifact_url ─  name, version, sha256, …        (website + JSON feed)
-                                                ▲                           │
-                         pull request ──────────┘                           ▼
-                         automated checks + maintainer review        download straight from
-                                                                     the developer's release
+```mermaid
+flowchart TB
+    dev["Developer publishes &lt;TITLEID&gt;.zip<br/>in their own GitHub Release"]
+    pr["Pull request adds or updates<br/>apps/&lt;TITLEID&gt;.json"]
+    checks["Automated checks<br/>publisher · release · sha256 · package · icon"]
+    review["Maintainer review and merge"]
+    site["homebrew.page/ps5<br/>website + JSON feed"]
+    user["User downloads straight from<br/>the developer's release, verified by sha256"]
+
+    dev --> pr --> checks --> review --> site --> user
+    dev -. artifact_url .-> user
 ```
 
 1. A developer publishes a versioned ZIP in their project's GitHub Releases.
