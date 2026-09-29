@@ -33,6 +33,13 @@ Before merging a submission, a maintainer confirms:
 Maintainers may ask questions on the pull request and decline submissions that
 don't meet this policy.
 
+Maintainers may also list a public native app on its developer's behalf,
+following the [listing runbook](maintainers/listing-runbook.md), which people
+and AI agents can use. The same review applies. The listing points at the
+developer's own release, the developer keeps ownership of it (updates and
+corrections by pull request), and they can ask for it to be withdrawn at any
+time.
+
 ## Title IDs
 
 - Title IDs are first come, first served; the first merged record owns the ID.
