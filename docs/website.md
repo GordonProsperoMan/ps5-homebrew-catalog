@@ -115,11 +115,10 @@ access to this repository.
 
 ### One-time setup
 
-1. **Create the Pages project.** In Cloudflare, go to **Workers & Pages →
-   Create → Pages → Use direct upload**. Name it `homebrew-page` and upload
-   any small placeholder folder; the first CI deployment replaces it. Don't use
-   "Connect to Git": that installs Cloudflare's GitHub app on your account and
-   links the two.
+1. **No project to create by hand.** The deploy job creates the Pages project
+   (named after `CLOUDFLARE_PAGES_PROJECT`) on its first run. Don't use the
+   dashboard's "Connect to Git", which installs Cloudflare's GitHub app and
+   links the accounts.
 2. **Create an API token.** Go to **My Profile → API Tokens → Create Token →
    Custom token**:
    - Permissions: **Account → Cloudflare Pages → Edit** (nothing else)
@@ -135,7 +134,8 @@ access to this repository.
    → Variables**, add the repository variable `CLOUDFLARE_PAGES_PROJECT` =
    `homebrew-page`. The deploy job is skipped while this variable is missing.
 6. **Deploy.** Go to **Actions → CI → Run workflow** on `main`, or push. Check
-   `https://homebrew-page.pages.dev/ps5/`.
+   `https://homebrew-page.pages.dev/ps5/`. If the name is taken on `pages.dev`,
+   Cloudflare adds a suffix; the project's page in the dashboard shows the address.
 7. **Connect the domain.** In the Pages project, go to **Custom domains → Set up
    a domain →** `homebrew.page`. An apex domain needs its DNS on Cloudflare; the
    certificate and records are then created automatically. The site's
