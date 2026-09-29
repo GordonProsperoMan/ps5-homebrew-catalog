@@ -135,8 +135,13 @@ new pull request from the same account. That account must also own the
 
 ## Updating your app
 
-Publish a new release, then open a pull request that edits your record's
-`version`, `artifact_url`, `sha256` and, if needed, `icon_url`. The same
+Usually nothing to do: the catalog checks for new releases every day and opens
+a pull request that moves your listing to the newest one (pre-releases
+included). For that to work, keep your asset name stable, or change only the
+version inside it (`example-0.5.0.zip` → `example-0.6.0.zip`), and pin
+`icon_url` to a tag. You can also update yourself: publish a new release, then
+open a pull request that edits your record's `version`, `artifact_url`,
+`sha256` and, if needed, `icon_url`. The same
 ownership rule applies: only the owner of the listed repository can update it.
 Moving an app to a different repository owner requires a maintainer; open an
 [ownership transfer issue](https://github.com/blackbearreloaded/ps5-homebrew-catalog/issues/new/choose).

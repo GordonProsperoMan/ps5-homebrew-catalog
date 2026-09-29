@@ -116,7 +116,7 @@ check and may be released. Details are in
 | Release, asset and license exist and match | ✓ | ✓ | ✓ |
 | GitHub's digest of the asset matches `sha256` (nothing downloaded) | ✓ | ✓ | ✓ |
 | Icon is a reachable PNG, JPEG or WebP image | ✓ | ✓ | ✓ |
-| Newer upstream release available (report only) | | | ✓ |
+| Newer upstream release: daily pull request with the update | | | ✓ |
 
 Pushes to `main` verify only the records they change; the daily health check
 covers the whole catalog once a week. Artifacts are never downloaded: the

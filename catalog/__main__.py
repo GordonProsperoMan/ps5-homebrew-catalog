@@ -191,6 +191,106 @@ def cmd_pr(args) -> int:
                                              "a maintainer will review it.")
 
 
+UPDATE_BRANCH = "catalog-update/{titleid}"
+
+
+def update_pr_text(update) -> tuple[str, str]:
+    from .records import release_parts
+    old, new = update.record.data, update.data
+    title = f"Update {new['name']} to {new['version']}"
+    old_tag, old_asset = release_parts(old)
+    new_tag, new_asset = release_parts(new)
+    repo = old["source_repo"]
+    rows = [
+        ("Version", old["version"], new["version"]),
+        ("Release", f"[{old_tag}]({repo}/releases/tag/{old_tag})", f"[{new_tag}]({repo}/releases/tag/{new_tag})"
+         + (" (pre-release)" if update.prerelease else "")),
+        ("File", f"`{old_asset}`", f"`{new_asset}`"),
+        ("sha256", f"`{old['sha256']}`", f"`{new['sha256']}` (GitHub's digest)"),
+        ("Icon", old["icon_url"], new["icon_url"] if new["icon_url"] != old["icon_url"] else "unchanged"),
+    ]
+    body = "\n".join([
+        f"Automated update from the daily release check for `{new['titleid']}` ({repo}).",
+        "",
+        "| | Listed | Proposed |",
+        "| --- | --- | --- |",
+        *[f"| {label} | {a} | {b} |" for label, a, b in rows],
+        "",
+        *[f"- {note}" for note in update.notes],
+        "",
+        "The submission check verifies this pull request like any other. Merge it to publish the update, "
+        "or close it to skip this version.",
+    ])
+    return title, body
+
+
+def open_update_pr(update, repository: str, github: GitHub, report: Report) -> None:
+    from .updates import render
+    name = f"apps/{update.record.path.name}"
+    branch = UPDATE_BRANCH.format(titleid=update.record.titleid)
+    title, body = update_pr_text(update)
+    content = render(update.data)
+    if title in github.closed_pull_titles(repository, branch):
+        report.notice(name, f"skipped: a pull request titled {title!r} was closed without merging")
+        return
+    existing = github.open_pull(repository, branch)
+    if existing:
+        git("fetch", "--quiet", "origin", f"+refs/heads/{branch}:refs/remotes/origin/{branch}")
+        try:
+            current = git("show", f"origin/{branch}:apps/{update.record.path.name}")
+        except subprocess.CalledProcessError:
+            current = ""
+        if current == content:
+            report.notice(name, f"pull request #{existing['number']} already proposes this update")
+            return
+    git("fetch", "--quiet", "origin", "main")
+    git("checkout", "--quiet", "-B", branch, "origin/main")
+    try:
+        (APPS / update.record.path.name).write_text(content, encoding="utf-8", newline="\n")
+        git("add", f"apps/{update.record.path.name}")
+        git("commit", "--quiet", "-m", title)
+        git("push", "--quiet", "--force", "origin", f"{branch}:{branch}")
+    finally:
+        git("checkout", "--quiet", "--detach", "origin/main")
+    if existing:
+        github.update_pull(repository, existing["number"], title, body)
+        report.notice(name, f"updated pull request #{existing['number']}: {title}")
+    else:
+        pull = github.create_pull(repository, branch, "main", title, body)
+        report.notice(name, f"opened pull request #{pull.get('number')}: {title}")
+
+
+def cmd_updates(args) -> int:
+    from .updates import find_update
+    report = Report()
+    records = load_catalog(APPS, report)
+    wanted = {t.upper() for t in args.titleids}
+    github = GitHub()
+    found = []
+    for record in records:
+        if wanted and record.titleid not in wanted:
+            continue
+        name = f"apps/{record.path.name}"
+        try:
+            update, reason = find_update(record, github)
+        except GitHubError as error:
+            report.warning(name, f"could not check releases: {error}")
+            continue
+        if update:
+            found.append(update)
+            report.notice(name, f"{record.tag} -> {update.tag}" + (" (pre-release)" if update.prerelease else ""))
+        elif reason not in ("up to date", "reservation"):
+            report.warning(name, reason)
+    if args.open_prs:
+        repository = os.environ["GITHUB_REPOSITORY"]
+        for update in found:
+            try:
+                open_update_pr(update, repository, github, report)
+            except (GitHubError, subprocess.CalledProcessError) as error:
+                report.error(f"apps/{update.record.path.name}", f"could not open the pull request: {error}")
+    return report.emit("Update check", f"{len(found)} update(s) found.")
+
+
 def cmd_build(args) -> int:
     from .site import build_site
     report = Report()
@@ -252,6 +352,11 @@ def main(argv: list[str] | None = None) -> int:
     build.add_argument("--no-icons", action="store_true", help="skip fetching icons (placeholders)")
     build.add_argument("--icon-cache", help="directory that keeps fetched icons between builds")
     build.set_defaults(func=cmd_build)
+
+    updates = commands.add_parser("updates", help="find newer upstream releases (and open PRs in CI)")
+    updates.add_argument("titleids", nargs="*", help="title IDs to check (default: all)")
+    updates.add_argument("--open-prs", action="store_true", help="CI: open or refresh one pull request per update")
+    updates.set_defaults(func=cmd_updates)
 
     pr = commands.add_parser("pr", help="CI: validate the pull request in GITHUB_EVENT_PATH")
     pr.set_defaults(func=cmd_pr)

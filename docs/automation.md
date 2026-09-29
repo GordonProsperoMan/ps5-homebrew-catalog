@@ -1,13 +1,14 @@
 # Automation
 
 All checks are implemented in [`catalog/`](../catalog) with the Python standard
-library and run by three workflows.
+library and run by four workflows.
 
 | Workflow | Trigger | Runs |
 | --- | --- | --- |
 | [Submission check](../.github/workflows/pull-request.yml) | Pull requests (`pull_request_target`) | `python3 -m catalog pr` |
 | [CI](../.github/workflows/ci.yml) | Pull requests and pushes to `main` | Tests, `catalog check` and a website build; on `main` also `catalog push`, then the [website deployment](website.md#deployment) |
 | [Catalog health](../.github/workflows/health.yml) | Daily 06:17 UTC and manual | `catalog health --slice today` |
+| [Release updates](../.github/workflows/updates.yml) | Daily 07:37 UTC and manual | `catalog updates --open-prs` |
 
 Results appear as annotations and in each run's job summary.
 
@@ -24,7 +25,11 @@ For a pull request the checker:
    of names, artifact URLs and digests. See [Metadata format](metadata.md).
 3. **Confirms the publisher.** The PR author must own `source_repo`, or be a
    public member of the organization that owns it. A record's title ID can't be
-   moved to a different repository owner by a community PR.
+   moved to a different repository owner by a community PR. One exception: a
+   change that only moves a listed app to its repository's **newest release**
+   (`version`, `artifact_url`, `sha256` and `icon_url`, same `source_repo`) is
+   accepted from any account, because the repository's owner published that
+   release. This is what lets the release-update bot's pull requests through.
 4. **Verifies the release.** Through the GitHub API: the repository is public
    and the URL is canonical, the license agrees with GitHub's detection, the tag
    is a published release, and the asset exists and is at most 2 GiB.
@@ -72,6 +77,57 @@ reservation, and it enforces the limit of 5 reservations per account.
 A failure notifies maintainers; see the [review policy](review-policy.md) for
 how broken listings are handled.
 
+## Release updates
+
+Every day the [Release updates](../.github/workflows/updates.yml) workflow asks
+GitHub for the newest release of every listed app, pre-releases included. For
+each app with a newer release it opens, or refreshes, one pull request on the
+branch `catalog-update/<TITLEID>`, authored by the catalog's GitHub App:
+
+- **File:** the release asset with the same file type that is the listed file's
+  successor: the same name, the same name with the new version, or the only
+  file of that type. If none matches unambiguously, the app is reported and
+  skipped.
+- **Version:** taken from the release tag, in the record's existing style
+  (`v0.6.0` becomes `0.6.0` when the listed version has no `v`).
+- **sha256:** GitHub's digest of that asset. Nothing is downloaded.
+- **Icon:** a tag-pinned `icon_url` moves to the new tag if the icon exists
+  there; otherwise it stays as it is.
+
+The pull request shows the old and new values side by side, and the normal
+submission check runs on it. Merge it to publish the update. If you close it
+without merging, that version isn't proposed again; the next release is. Run
+`python3 -m catalog updates` locally to see what would be proposed.
+
+### Setting up the GitHub App (once)
+
+Pull requests opened with the workflow's built-in token wouldn't trigger the
+submission check, so the job acts as a small GitHub App instead.
+
+1. **Create the app:** under **Settings → Developer settings → GitHub Apps →
+   New GitHub App** on your account:
+   - Name: anything, e.g. `ps5-catalog-bot`. Homepage URL: this repository.
+   - Webhook: untick **Active**.
+   - Repository permissions: **Contents: Read and write**, **Pull requests:
+     Read and write** (Metadata: Read-only is added automatically). Nothing else.
+   - Where can it be installed: **Only on this account**.
+2. **Install it:** from the app's page, choose **Install App** → **Only select
+   repositories** → this repository.
+3. **Create a key:** on the app's settings page, choose **Generate a private
+   key**. A `.pem` file downloads.
+4. **Store the credentials in GitHub**, not in the repository files:
+   - **Settings → Environments → New environment** `catalog-bot`, with
+     deployment branches limited to `main`, and the environment secret
+     `CATALOG_BOT_PRIVATE_KEY` holding the whole `.pem` file.
+   - **Settings → Secrets and variables → Actions → Variables**: repository
+     variable `CATALOG_BOT_CLIENT_ID` holding the app's **Client ID** (shown
+     on the app's settings page). The workflow is skipped while this is unset.
+   - Then delete the downloaded `.pem` file.
+5. **Test it:** **Actions → Release updates → Run workflow**.
+
+If the `main` ruleset restricts who may create branches, allow the app to push
+`catalog-update/*` branches.
+
 ## Recommended repository settings
 
 Maintainers should protect `main` with a ruleset for pull requests that:
@@ -96,6 +152,7 @@ python3 -m catalog check                   # offline format check of apps/
 python3 -m catalog verify [TITLEID ...]    # online checks for some or all records
 python3 -m catalog digest <artifact_url>   # sha256 as reported by GitHub
 python3 -m catalog health [--slice today]  # what the daily job runs (default: all)
+python3 -m catalog updates [TITLEID ...]   # newer releases that would be proposed
 python3 -m unittest discover -s tests
 ```
 

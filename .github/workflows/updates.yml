@@ -1,0 +1,50 @@
+name: Release updates
+
+# Daily: looks for newer upstream releases (pre-releases included) of every
+# listed app and opens or refreshes one pull request per app as the catalog's
+# GitHub App. Pull requests opened by an app trigger the normal submission
+# check; a maintainer merges them. Skipped until CATALOG_BOT_CLIENT_ID is set.
+on:
+  schedule:
+    - cron: '37 7 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release-updates
+  cancel-in-progress: false
+
+jobs:
+  updates:
+    name: Open update pull requests
+    if: vars.CATALOG_BOT_CLIENT_ID != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: catalog-bot
+    steps:
+      - id: token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.CATALOG_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.CATALOG_BOT_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          token: ${{ steps.token.outputs.token }}
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+      - name: Commit as the app
+        run: |
+          id="$(gh api "/users/${SLUG}%5Bbot%5D" --jq .id)"
+          git config user.name "${SLUG}[bot]"
+          git config user.email "${id}+${SLUG}[bot]@users.noreply.github.com"
+        env:
+          SLUG: ${{ steps.token.outputs.app-slug }}
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+      - run: python3 -m catalog updates --open-prs
+        env:
+          GITHUB_TOKEN: ${{ steps.token.outputs.token }}

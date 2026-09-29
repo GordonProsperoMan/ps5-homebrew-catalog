@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from .github import GitHub, GitHubError
 from .records import MAX_RESERVATIONS_PER_ACCOUNT, RECORD_PATH, Record
 from .report import Report
+from .updates import is_release_bump
 
 MAINTAINER_ASSOCIATIONS = {"OWNER", "MEMBER", "COLLABORATOR"}
 REGULAR_FILE_MODE = "100644"
@@ -48,6 +49,18 @@ def check_changes(changes: list[Change], maintainer: bool, report: Report) -> li
     return records
 
 
+def is_bump(old: Record, new: Record, github: GitHub, report: Report, name: str) -> bool:
+    try:
+        bump = is_release_bump(old, new, github)
+    except GitHubError as error:
+        report.error(name, f"could not check the repository's releases: {error}")
+        return False
+    if bump:
+        report.notice(name, f"updates {new.titleid} to the newest release of {new.owner}/{new.repo}; "
+                            "allowed from any account")
+    return bump
+
+
 def check_publisher(author: str, maintainer: bool, old: Record | None, new: Record,
                     github: GitHub, report: Report, holder: str | None = None, held: int = 0) -> None:
     """Decide whether the PR author may create or change this record.
@@ -69,6 +82,8 @@ def check_publisher(author: str, maintainer: bool, old: Record | None, new: Reco
                 report.error(name, f"{new.titleid} is reserved by @{holder}; only that account can "
                                    "update or release it")
                 return
+    elif old and not maintainer and not new.reserved and is_bump(old, new, github, report, name):
+        return
     elif old and new.reserved:
         if not maintainer:
             report.error(name, f"{new.titleid} is already released; it can't go back to a reservation")
