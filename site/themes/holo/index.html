@@ -10,8 +10,8 @@ $toolbar
   <ul class="cards" data-grid data-view-panel="cards">
 $cards
   </ul>
-  <div class="list-head" data-view-panel="list" aria-hidden="true">
-    <div class="list-head__cols"><span></span><span>Name</span><span>Type</span><span>Title ID</span><span>Version</span><span>Updated</span><span class="col-dev">Developer</span></div>
+  <div class="list-head" data-view-panel="list">
+    <div class="list-head__cols"><span></span><button type="button" data-sort-key="name">Name</button><button type="button" data-sort-key="kind">Type</button><button type="button" data-sort-key="titleid">Title ID</button><span>Version</span><button type="button" data-sort-key="updated">Updated</button><button type="button" class="col-dev" data-sort-key="author">Developer</button></div>
   </div>
   <ul class="list" data-grid data-view-panel="list">
 $rows

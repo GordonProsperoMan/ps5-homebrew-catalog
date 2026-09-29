@@ -19,9 +19,13 @@ dist/
 
 - **One catalog page, two views.** `/ps5/` holds both the cards and the list;
   the Cards/List switch changes view in place. Search, type chips, status
-  (available or coming soon), format and sort (name, title ID, type, recently
-  updated) apply to both and live in the URL (`?q=…&kind=game&sort=updated&view=list`),
-  so any filtered view can be linked. The old `/ps5/list/` redirects there.
+  (available or coming soon), format and sort apply to both and live in the URL
+  (`?q=…&kind=game&sort=updated&dir=asc&view=list`), so any filtered view can be
+  linked. The old `/ps5/list/` redirects there.
+- **Sorting.** By name, updated date, developer, type or title ID, ascending or
+  descending (the ↑/↓ button). In the list view, clicking a column header sorts
+  by it, and clicking it again reverses the order. Updated dates default to newest
+  first; everything else defaults to A to Z.
 - **In-page navigation.** Opening an app fetches its static page and swaps its
   content in without reloading; Back returns to the catalog with the same
   filters, view, scroll position and focus. Every app page is still a complete

@@ -297,6 +297,7 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
                 f' data-app data-app-kind="{values["kind"]}" data-status="{values["status"]}"'
                 f' data-format="{values["format"]}"'
                 f' data-name="{e(record.data["name"].casefold())}" data-titleid="{values["titleid"]}"'
+                f' data-author="{e(record.data["author"].casefold())}"'
                 f' data-updated="{values["updated_iso"]}" data-search-text="{values["search_text"]}"'
             )
             name = template.replace(".html", "-soon.html") if record.reserved else template

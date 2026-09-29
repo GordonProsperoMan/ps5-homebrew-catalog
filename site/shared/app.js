@@ -74,11 +74,14 @@
     var statusSelect = scope.querySelector("[data-status-filter]");
     var formatSelect = scope.querySelector("[data-format-filter]");
     var sortSelect = scope.querySelector("[data-sort]");
+    var dirButton = scope.querySelector("[data-sort-dir]");
+    var sortHeads = Array.prototype.slice.call(scope.querySelectorAll("[data-sort-key]"));
     var reset = scope.querySelector("[data-reset]");
     var viewButtons = Array.prototype.slice.call(scope.querySelectorAll("[data-view-button]"));
     var counts = Array.prototype.slice.call(scope.querySelectorAll("[data-count]"));
     var empty = scope.querySelector("[data-empty]");
     var kind = "all";
+    var dir = "asc";
     var searchTimer = null;
 
     function normalize(text) {
@@ -90,7 +93,7 @@
       return {
         element: element,
         panel: element.getAttribute("data-view-panel"),
-        sortedBy: "name",      // the build emits items sorted by name
+        sortedBy: "name:asc",  // the build emits items sorted by name
         filteredBy: null,
         shown: 0,
         items: Array.prototype.map.call(element.querySelectorAll("[data-app]"), function (el) {
@@ -102,18 +105,35 @@
             format: el.getAttribute("data-format"),
             name: el.getAttribute("data-name") || "",
             titleid: el.getAttribute("data-titleid") || "",
+            author: el.getAttribute("data-author") || "",
             updated: el.getAttribute("data-updated") || ""
           };
         })
       };
     });
 
+    // Ascending comparators; a descending sort reverses them. Ties fall back to the name.
     var sorters = {
       name: function (a, b) { return a.name.localeCompare(b.name); },
       titleid: function (a, b) { return a.titleid.localeCompare(b.titleid); },
       kind: function (a, b) { return a.kind.localeCompare(b.kind) || sorters.name(a, b); },
-      updated: function (a, b) { return b.updated.localeCompare(a.updated) || sorters.name(a, b); }
+      author: function (a, b) { return a.author.localeCompare(b.author) || sorters.name(a, b); },
+      updated: function (a, b) { return a.updated.localeCompare(b.updated) || sorters.name(a, b); }
     };
+
+    // Most recently updated first; everything else A to Z.
+    function defaultDir(key) {
+      return key === "updated" ? "desc" : "asc";
+    }
+
+    function sortKey() {
+      return sortSelect && sorters[sortSelect.value] ? sortSelect.value : "name";
+    }
+
+    function comparator(key, direction) {
+      var compare = sorters[key] || sorters.name;
+      return direction === "desc" ? function (a, b) { return compare(b, a); } : compare;
+    }
 
     function pick(select, value) {
       if (!select) return;
@@ -131,7 +151,8 @@
       if (kind !== "all") next.set("kind", kind);
       if (statusSelect && statusSelect.value !== "all") next.set("status", statusSelect.value);
       if (formatSelect && formatSelect.value !== "all") next.set("format", formatSelect.value);
-      if (sortSelect && sortSelect.value !== "name") next.set("sort", sortSelect.value);
+      if (sortKey() !== "name") next.set("sort", sortKey());
+      if (dir !== defaultDir(sortKey())) next.set("dir", dir);
       if (view() === "list") next.set("view", "list");
       return next.toString();
     }
@@ -139,12 +160,13 @@
     // Bring one grid up to date. Work happens only when the sort or filters
     // changed since that grid was last updated, so the hidden view costs nothing
     // until it is shown.
-    function refresh(grid, sortKey, filters) {
-      if (grid.sortedBy !== sortKey) {
+    function refresh(grid, sorting, filters) {
+      if (grid.sortedBy !== sorting) {
+        var parts = sorting.split(":");
         var fragment = document.createDocumentFragment();
-        grid.items.sort(sorters[sortKey] || sorters.name).forEach(function (item) { fragment.appendChild(item.el); });
+        grid.items.sort(comparator(parts[0], parts[1])).forEach(function (item) { fragment.appendChild(item.el); });
         grid.element.appendChild(fragment);
-        grid.sortedBy = sortKey;
+        grid.sortedBy = sorting;
       }
       if (grid.filteredBy !== filters.key) {
         var shown = 0;
@@ -169,13 +191,24 @@
         format: formatSelect ? formatSelect.value : "all"
       };
       filters.key = [filters.terms.join(" "), filters.kind, filters.status, filters.format].join("|");
-      var sortKey = sortSelect ? sortSelect.value : "name";
+      var key = sortKey();
       var current = view();
       var shown = 0;
       grids.forEach(function (grid) {
         if (grid.panel && grid.panel !== current) return;
-        refresh(grid, sortKey, filters);
+        refresh(grid, key + ":" + dir, filters);
         shown = grid.shown;
+      });
+      if (dirButton) {
+        dirButton.textContent = dir === "asc" ? "↑" : "↓";
+        dirButton.setAttribute("aria-label", dir === "asc" ? "Ascending; switch to descending" : "Descending; switch to ascending");
+        dirButton.setAttribute("title", dir === "asc" ? "Ascending" : "Descending");
+      }
+      sortHeads.forEach(function (head) {
+        var active = head.getAttribute("data-sort-key") === key;
+        var label = "Sort by " + head.textContent.trim().toLowerCase();
+        head.setAttribute("data-active", active ? dir : "");
+        head.setAttribute("aria-label", active ? label + ", currently " + (dir === "asc" ? "ascending" : "descending") : label);
       });
       chips.forEach(function (chip) {
         chip.setAttribute("aria-pressed", String(chip.getAttribute("data-kind") === kind));
@@ -189,7 +222,7 @@
       });
       if (empty) empty.hidden = shown !== 0;
       var q = query();
-      if (reset) reset.hidden = q.replace(/(^|&)(sort|view)=[^&]*/g, "") === "";
+      if (reset) reset.hidden = q.replace(/(^|&)(sort|dir|view)=[^&]*/g, "") === "";
       if (updateUrl) {
         window.history.replaceState(window.history.state, "", window.location.pathname + (q ? "?" + q : "") + window.location.hash);
       }
@@ -204,7 +237,15 @@
       pick(statusSelect, params.get("status") || "all");
       pick(formatSelect, params.get("format") || "all");
       pick(sortSelect, params.get("sort") || "name");
+      var requested = params.get("dir");
+      dir = requested === "asc" || requested === "desc" ? requested : defaultDir(sortKey());
       setView(params.get("view") === "list" ? "list" : "cards", false);
+    }
+
+    function sortBy(key, direction) {
+      pick(sortSelect, key);
+      dir = direction || defaultDir(sortKey());
+      applyNow();
     }
 
     function setView(next, updateUrl) {
@@ -223,8 +264,21 @@
       window.clearTimeout(searchTimer);
       searchTimer = window.setTimeout(function () { apply(true); }, 150);
     });
-    [statusSelect, formatSelect, sortSelect].forEach(function (select) {
+    [statusSelect, formatSelect].forEach(function (select) {
       if (select) select.addEventListener("change", applyNow);
+    });
+    if (sortSelect) sortSelect.addEventListener("change", function () { sortBy(sortSelect.value); });
+    if (dirButton) dirButton.addEventListener("click", function () {
+      dir = dir === "asc" ? "desc" : "asc";
+      applyNow();
+    });
+    // List headers: a new column sorts in its natural order, the active one reverses.
+    sortHeads.forEach(function (head) {
+      head.addEventListener("click", function () {
+        var key = head.getAttribute("data-sort-key");
+        if (key === sortKey()) sortBy(key, dir === "asc" ? "desc" : "asc");
+        else sortBy(key);
+      });
     });
     chips.forEach(function (chip) {
       chip.addEventListener("click", function () {
