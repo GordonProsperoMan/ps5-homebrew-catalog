@@ -31,7 +31,7 @@ SHA256 = re.compile(r"[0-9a-f]{64}")
 VERSION = re.compile(r"[0-9A-Za-z][0-9A-Za-z.+_-]*")
 LICENSE = re.compile(r"[A-Za-z0-9.+-]+(?: (?:AND|OR|WITH) [A-Za-z0-9.+-]+)*")
 REPO_PART = re.compile(r"[A-Za-z0-9_.-]+")
-ASSET_NAME = re.compile(r"[^/?#%\s]+\.zip")
+ASSET_NAME = re.compile(r"[^/?#%\s]+\.(?:zip|ffpfsc|ffpkg)")
 TAG = re.compile(r"[^/?#\s]+")
 ICON_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp")
 # Unicode categories rejected in text: controls, invisible formatting (including
@@ -146,7 +146,7 @@ def _check_fields(data: dict) -> list[str]:
         tag, _, asset = suffix.partition("/")
         if not (suffix and artifact.scheme == "https" and not artifact.query and not artifact.fragment
                 and TAG.fullmatch(tag) and ASSET_NAME.fullmatch(asset)):
-            problems.append("artifact_url must be <source_repo>/releases/download/<tag>/<asset>.zip")
+            problems.append("artifact_url must be <source_repo>/releases/download/<tag>/<asset> ending in .zip, .ffpfsc or .ffpkg")
         elif unquote(tag) == "latest":
             problems.append("artifact_url must name a specific release tag, not 'latest'")
 

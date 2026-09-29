@@ -5,7 +5,7 @@
 **What the app does:** <!-- one or two sentences for the reviewer -->
 
 - [ ] I am opening this PR from the account that owns `source_repo` (or I am a public member of the owning organization).
-- [ ] The artifact follows [`homebrew-zip-v1`](https://github.com/blackbearreloaded/ps5-homebrew-catalog/blob/main/docs/package-format.md) and `sce_sys/param.json` uses this title ID.
+- [ ] The artifact is a `.zip`, `.ffpfsc` or `.ffpkg` ([artifact formats](https://github.com/blackbearreloaded/ps5-homebrew-catalog/blob/main/docs/artifact-formats.md)) whose app uses this title ID.
 - [ ] `sha256` is the digest of the exact asset in `artifact_url`, and I won't replace that asset.
 - [ ] I have the right to distribute this build under the stated license.
 - [ ] I have read the [review policy](https://github.com/blackbearreloaded/ps5-homebrew-catalog/blob/main/docs/review-policy.md).

@@ -174,7 +174,7 @@ def main(argv: list[str] | None = None) -> int:
 
     verify = commands.add_parser("verify", help="check records against GitHub and their downloads")
     verify.add_argument("titleids", nargs="*", help="title IDs to verify (default: all)")
-    verify.add_argument("--no-download", action="store_true", help="skip artifact download and ZIP checks")
+    verify.add_argument("--no-download", action="store_true", help="skip downloading artifacts to check sha256")
     verify.set_defaults(func=cmd_verify)
 
     digest = commands.add_parser("digest", help="print the sha256 of a GitHub release asset URL")

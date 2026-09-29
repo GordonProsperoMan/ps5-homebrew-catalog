@@ -1,7 +1,6 @@
 """Shared fixtures for the catalog tests."""
 
 import json
-import zipfile
 from pathlib import Path
 
 VALID = {
@@ -30,24 +29,3 @@ def write_record(directory: Path, data: dict, filename: str | None = None) -> Pa
     path = directory / (filename or f"{data.get('titleid', 'PPSA01234')}.json")
     path.write_text(json.dumps(data, indent=2), encoding="utf-8")
     return path
-
-
-def write_zip(path: Path, entries: dict, titleid: str = "PPSA01234") -> Path:
-    """entries maps archive names to bytes (or None for a directory)."""
-    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
-        for name, content in entries.items():
-            if content is None:
-                archive.writestr(zipfile.ZipInfo(name), b"")
-            else:
-                archive.writestr(name, content)
-    return path
-
-
-def package_entries(titleid: str = "PPSA01234", param_titleid: str | None = None) -> dict:
-    return {
-        f"{titleid}/": None,
-        f"{titleid}/eboot.bin": b"\x7fELF" + b"\x00" * 64,
-        f"{titleid}/sce_sys/param.json": json.dumps(
-            {"titleId": param_titleid or titleid, "contentVersion": "01.000.000"}).encode(),
-        f"{titleid}/sce_sys/icon0.png": b"\x89PNG\r\n\x1a\n",
-    }

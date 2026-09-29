@@ -27,12 +27,11 @@ For a pull request the checker:
    moved to a different repository owner by a community PR.
 4. **Verifies the release.** Through the GitHub API: the repository is public
    and the URL is canonical, the license agrees with GitHub's detection, the tag
-   is a published release, the asset exists and is at most 1 GiB, and GitHub's
+   is a published release, the asset exists and is at most 2 GiB, and GitHub's
    own asset digest equals `sha256`.
-5. **Verifies the bytes.** It streams the artifact to a temporary file, hashes
-   it, and requires the hash to equal `sha256`. It then inspects the ZIP against
-   [`homebrew-zip-v1`](package-format.md), decompressing each file in memory to
-   check CRCs and real sizes, and reads `sce_sys/param.json`.
+5. **Verifies the bytes.** It streams the artifact, hashes
+   it without storing it, and requires the hash to equal `sha256`. Artifacts
+   are never opened, extracted or executed (see [artifact formats](artifact-formats.md)).
 6. **Checks the icon.** It fetches at most 2 MiB and requires PNG, JPEG or WebP
    content, warning when a PNG isn't square or is under 256×256.
 
@@ -43,7 +42,7 @@ workflow and checker, never the pull request's. It checks out `main`, fetches th
 PR head as a git ref, and reads the changed records with `git show` as plain
 data. PR code is never checked out or executed, so a submission can't alter the
 rules it is judged by. The token is read-only, no secrets are used, artifacts
-are never extracted to disk or executed, and every download and decompression
+are never opened or executed, and every download
 is size-bounded. Actions are pinned to commit SHAs and kept current by
 Dependabot.
 
@@ -58,7 +57,7 @@ through a pull request.
 
 ## Weekly health check
 
-Re-verifies every record end to end (release, digest, download, package, icon)
+Re-verifies every record end to end (release, digest, download, icon)
 and reports projects that have published a newer release than the one listed.
 A failure notifies maintainers; see the [review policy](review-policy.md) for
 how broken listings are handled.
@@ -80,7 +79,7 @@ push workflow.
 ```sh
 python3 -m catalog check                   # offline format check of apps/
 python3 -m catalog verify [TITLEID ...]    # online checks for some or all records
-python3 -m catalog verify --no-download    # skip artifact download and ZIP checks
+python3 -m catalog verify --no-download    # skip downloading artifacts
 python3 -m catalog digest <artifact_url>   # sha256 as reported by GitHub
 python3 -m catalog health                  # what the weekly job runs
 python3 -m unittest discover -s tests

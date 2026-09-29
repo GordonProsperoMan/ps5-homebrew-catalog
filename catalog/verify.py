@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import tempfile
-from pathlib import Path
-
 from . import artifacts
 from .github import GitHub, GitHubError
 from .records import Record
@@ -47,7 +44,7 @@ def verify_record(record: Record, github: GitHub, report: Report, download: bool
         return
 
     if download:
-        _verify_package(name, record, report)
+        _verify_artifact(name, record, report)
     _verify_icon(name, data["icon_url"], report)
 
 
@@ -59,26 +56,16 @@ def _check_license(name: str, license_value: str, repo: dict, report: Report) ->
         report.error(name, f"license {license_value!r} does not match the repository license {detected!r}")
 
 
-def _verify_package(name: str, record: Record, report: Report) -> None:
-    with tempfile.TemporaryDirectory(prefix="catalog-") as tmp:
-        path = Path(tmp) / "artifact.zip"
-        try:
-            size, digest = artifacts.download(record.data["artifact_url"], path)
-        except (artifacts.DownloadError, OSError) as error:
-            report.error(name, f"artifact download failed: {error}")
-            return
-        if digest != record.data["sha256"]:
-            report.error(name, f"downloaded artifact has sha256 {digest}, not the recorded value")
-            return
-        result = artifacts.inspect_package(path, record.titleid)
-    for problem in result.errors:
-        report.error(name, problem)
-    if result.errors:
+def _verify_artifact(name: str, record: Record, report: Report) -> None:
+    try:
+        size, digest = artifacts.hash_download(record.data["artifact_url"])
+    except (artifacts.DownloadError, OSError) as error:
+        report.error(name, f"artifact download failed: {error}")
         return
-    content_version = str(result.param.get("contentVersion", "")) if result.param else ""
-    report.notice(name, f"package OK: {size:,} bytes, {result.files} files, "
-                        f"{result.unpacked_bytes:,} bytes unpacked, param.json contentVersion "
-                        f"{content_version or 'absent'}")
+    if digest != record.data["sha256"]:
+        report.error(name, f"downloaded artifact has sha256 {digest}, not the recorded value")
+        return
+    report.notice(name, f"artifact matches sha256 ({size:,} bytes)")
 
 
 def _verify_icon(name: str, url: str, report: Report) -> None:

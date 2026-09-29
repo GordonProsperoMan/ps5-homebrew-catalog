@@ -1,7 +1,7 @@
 name: Catalog health
 
 # Re-verifies every listed download: release still published, bytes still match
-# the recorded sha256, package still valid, icon still reachable. Also reports
+# the recorded sha256, icon still reachable. Also reports
 # apps whose projects have published a newer release.
 on:
   schedule:

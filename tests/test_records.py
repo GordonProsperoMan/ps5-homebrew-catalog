@@ -31,6 +31,11 @@ class RecordTests(unittest.TestCase):
     def test_license_expression_and_prerelease_version(self):
         self.assertEqual(self.errors(record(license="MIT OR Apache-2.0", version="0.2.0-alpha.1")), [])
 
+    def test_artifact_formats(self):
+        for extension in (".zip", ".ffpfsc", ".ffpkg"):
+            with self.subTest(extension=extension):
+                self.assertEqual(self.errors(record(artifact_url=VALID_ARTIFACT.replace(".zip", extension))), [])
+
     def test_missing_and_extra_fields(self):
         data = record(extra="x")
         del data["sha256"]

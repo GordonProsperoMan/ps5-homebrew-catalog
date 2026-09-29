@@ -4,7 +4,7 @@
 [![Catalog health](https://github.com/blackbearreloaded/ps5-homebrew-catalog/actions/workflows/health.yml/badge.svg)](https://github.com/blackbearreloaded/ps5-homebrew-catalog/actions/workflows/health.yml)
 
 A community-maintained index of PS5 homebrew. Each app is one small JSON record
-that points to a release ZIP its developer hosts in their own GitHub Releases.
+that points to a release file its developer hosts in their own GitHub Releases.
 This repository stores no binaries.
 
 The records here are the source of the [PS5 homebrew website](https://homebrew.page/ps5/),
@@ -14,9 +14,9 @@ and they will feed a console-side store that can install listed apps.
 
 ```mermaid
 flowchart TB
-    dev["Developer publishes &lt;TITLEID&gt;.zip<br/>in their own GitHub Release"]
+    dev["Developer publishes .zip, .ffpfsc or .ffpkg<br/>in their own GitHub Release"]
     pr["Pull request adds or updates<br/>apps/&lt;TITLEID&gt;.json"]
-    checks["Automated checks<br/>publisher · release · sha256 · package · icon"]
+    checks["Automated checks<br/>publisher · release · sha256 · icon"]
     review["Maintainer review and merge"]
     site["homebrew.page/ps5<br/>website + JSON feed"]
     user["User downloads straight from<br/>the developer's release, verified by sha256"]
@@ -25,10 +25,10 @@ flowchart TB
     dev -. artifact_url .-> user
 ```
 
-1. A developer publishes a versioned ZIP in their project's GitHub Releases.
+1. A developer publishes a versioned artifact in their project's GitHub Releases.
 2. They open a pull request that adds or updates `apps/<TITLEID>.json`.
 3. Automation verifies the record, the publisher, the release, the exact bytes
-   (sha256), the package layout, and the icon.
+   (sha256), and the icon.
 4. A maintainer reviews and merges; the website and feed are rebuilt from `main`.
 
 Downloads always come from the developer's own release, pinned by sha256, so a
@@ -38,9 +38,9 @@ listed app can't be silently replaced.
 
 Read **[Submitting an app](docs/submitting.md)**. In short:
 
-1. Package your app in the [`homebrew-zip-v1` layout](docs/package-format.md): a
-   single `<TITLEID>/` folder containing `eboot.bin` and `sce_sys/param.json`.
-2. Publish the ZIP in a release of your public GitHub repository.
+1. Package your app as a `.zip` app folder, `.ffpfsc` image or `.ffpkg`
+   ([artifact formats](docs/artifact-formats.md)).
+2. Publish it in a release of your public GitHub repository.
 3. Add `apps/<TITLEID>.json` from the account that owns that repository.
 4. Open a pull request and fix anything the checks report.
 
@@ -75,12 +75,11 @@ Field rules and limits are in **[Metadata format](docs/metadata.md)**.
 | Submitter owns the source repository | ✓ | | |
 | Release, asset and license exist and match | ✓ | ✓ | ✓ |
 | Downloaded bytes match `sha256` | ✓ | ✓ | ✓ |
-| ZIP layout, integrity, size limits, `param.json` title ID | ✓ | ✓ | ✓ |
 | Icon is a reachable PNG, JPEG or WebP image | ✓ | ✓ | ✓ |
 | Newer upstream release available (report only) | | | ✓ |
 
 Pushes to `main` verify only the records they change; the weekly run verifies all
-of them. Artifacts are downloaded and inspected but never executed. See
+of them. Artifacts are downloaded only to hash them; they are never opened or executed. See
 **[Automation](docs/automation.md)** for how the checks work and why they are safe
 to run on untrusted pull requests.
 
@@ -112,7 +111,7 @@ Python 3.10 or newer, no dependencies:
 
 ```sh
 python3 -m catalog check                  # offline: every record's format
-python3 -m catalog verify PPSA01234       # online: release, sha256, ZIP, icon
+python3 -m catalog verify PPSA01234       # online: release, sha256, icon
 python3 -m catalog digest <artifact_url>  # print the sha256 GitHub reports
 python3 -m unittest discover -s tests     # checker tests
 ```

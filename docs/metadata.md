@@ -6,7 +6,7 @@ field may be empty or missing, and no other fields are allowed.
 
 | Field | Max length | Rules |
 | --- | ---: | --- |
-| `titleid` | 9 | Four uppercase letters and five digits, e.g. `PPSA01234`. Must equal the filename and `titleId` in the package's `sce_sys/param.json`. `PPSA99999` is reserved. |
+| `titleid` | 9 | Four uppercase letters and five digits, e.g. `PPSA01234`. Must equal the filename, and should equal the app's `titleId` in `sce_sys/param.json`. `PPSA99999` is reserved. |
 | `name` | 64 | Display name. Unique across the catalog, ignoring case. |
 | `kind` | 4 | `app`, `game` or `tool`. |
 | `description` | 200 | One short plain-text sentence. No Markdown or HTML; it is displayed as text. |
@@ -14,7 +14,7 @@ field may be empty or missing, and no other fields are allowed.
 | `author` | 64 | Developer or publisher name, as you want it credited. |
 | `version` | 32 | Version shown to users. Letters, digits and `. + _ -`, e.g. `01.000.005` or `0.2.0-alpha.1`. |
 | `source_repo` | 200 | `https://github.com/<owner>/<repository>`, using GitHub's exact capitalization. Must be public. |
-| `artifact_url` | 500 | `<source_repo>/releases/download/<tag>/<asset>.zip` for a published release. Moving links such as `/releases/latest/download/` are rejected. Unique across the catalog. |
+| `artifact_url` | 500 | `<source_repo>/releases/download/<tag>/<asset>` for a published release; the asset ends in `.zip`, `.ffpfsc` or `.ffpkg`. Moving links such as `/releases/latest/download/` are rejected. Unique across the catalog. |
 | `sha256` | 64 | SHA-256 of the artifact as 64 lowercase hex characters. Unique across the catalog. |
 | `icon_url` | 500 | Direct HTTPS link ending in `.png`, `.jpg`, `.jpeg` or `.webp`, returning that image type, at most 2 MiB. Square, 256×256 or larger recommended. Pin to a tag or commit. |
 

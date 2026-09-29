@@ -7,8 +7,9 @@ then reviews and merges it.
 ## Requirements
 
 - A **public GitHub repository** for the app, with a license GitHub can detect.
-- A **release ZIP** in the [`homebrew-zip-v1` layout](package-format.md),
-  attached to a published release of that repository. Pre-releases are accepted.
+- A **release artifact** (`.zip`, `.ffpfsc` or `.ffpkg`, see
+  [artifact formats](artifact-formats.md)) attached to a published release of
+  that repository. Pre-releases are accepted.
 - A **title ID** no other listed app uses.
 - A **square icon** (PNG, JPEG or WebP, 256×256 or larger, at most 2 MiB) at a
   stable HTTPS URL. Your `sce_sys/icon0.png` in the repository works well.
@@ -29,18 +30,10 @@ four uppercase letters followed by five digits.
 - Keep it for the life of the app. Changing it makes the console treat the app
   as a different title with separate save data.
 
-## 2. Package and publish
+## 2. Publish the artifact
 
-Build a ZIP whose only top-level entry is a folder named after the title ID:
-
-```text
-PPSA01234.zip
-└── PPSA01234/
-    ├── eboot.bin
-    ├── sce_sys/param.json      ("titleId": "PPSA01234")
-    ├── sce_sys/icon0.png
-    └── ...                     modules, assets
-```
+Build one of the supported [artifact formats](artifact-formats.md): a `.zip`
+of the `<TITLEID>/` app folder, a `.ffpfsc` image, or a `.ffpkg`.
 
 Attach it to a release. Use a new tag and a new asset for every version; never
 replace the asset of a release that is already listed, because its sha256 would
@@ -50,7 +43,7 @@ for your repository makes that guarantee explicit.
 
 ## 3. Get the sha256
 
-The catalog pins the exact bytes of your ZIP. Any of these give the value:
+The catalog pins the exact bytes of your artifact. Any of these give the value:
 
 ```sh
 python3 -m catalog digest https://github.com/<owner>/<repo>/releases/download/<tag>/<asset>.zip
@@ -91,8 +84,7 @@ python3 -m catalog check              # format only, no network
 python3 -m catalog verify PPSA01234   # the same online checks CI runs
 ```
 
-`verify` downloads your ZIP (at most 1 GiB) and inspects it without extracting
-or executing anything.
+`verify` downloads your artifact (at most 2 GiB) only to hash it.
 
 ## 6. Open the pull request
 
@@ -121,9 +113,7 @@ your repository.
 | --- | --- |
 | `does not own` | Open the PR from the repository owner's account, or make your organization membership public. |
 | `sha256 does not match` | Recompute the digest of the exact asset in `artifact_url`. |
-| `outside the single top-level` | Put everything inside one `<TITLEID>/` folder at the root of the ZIP. |
-| `missing <TITLEID>/eboot.bin` | The folder must contain `eboot.bin` and `sce_sys/param.json`. |
-| `param.json titleId` | Make `titleId` in `sce_sys/param.json` equal the record's `titleid`. |
+| `artifact_url must be` | Link a specific release asset ending in `.zip`, `.ffpfsc` or `.ffpkg`. |
 | `license ... does not match` | Use the SPDX identifier GitHub shows for your repository. |
 | `name duplicates` | Another app already uses that name; choose a distinct one. |
 | `canonical URL` | Match the repository's exact owner/name capitalization. |
