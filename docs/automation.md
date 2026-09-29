@@ -119,9 +119,9 @@ submission check, so the job acts as a small GitHub App instead.
    - **Settings → Environments → New environment** `catalog-bot`, with
      deployment branches limited to `main`, and the environment secret
      `CATALOG_BOT_PRIVATE_KEY` holding the whole `.pem` file.
-   - **Settings → Secrets and variables → Actions → Variables**: repository
-     variable `CATALOG_BOT_CLIENT_ID` holding the app's **Client ID** (shown
-     on the app's settings page). The workflow is skipped while this is unset.
+   - The variable `CATALOG_BOT_CLIENT_ID` holding the app's **Client ID**
+     (shown on the app's settings page), either in the same environment or as
+     a repository variable. The workflow does nothing while it is unset.
    - Then delete the downloaded `.pem` file.
 5. **Test it:** **Actions → Release updates → Run workflow**.
 
