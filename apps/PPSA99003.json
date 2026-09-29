@@ -7,5 +7,6 @@
   "author": "BlackBearReloaded",
   "version": "01.000.015",
   "source_repo": "https://github.com/blackbearreloaded/ProsperoTV",
-  "artifact_url": "https://github.com/blackbearreloaded/ProsperoTV/releases/download/01.000.015/PPSA99003.zip"
+  "artifact_url": "https://github.com/blackbearreloaded/ProsperoTV/releases/download/01.000.015/PPSA99003.zip",
+  "icon_url": "https://raw.githubusercontent.com/blackbearreloaded/ProsperoTV/01.000.015/sce_sys/icon0.png"
 }

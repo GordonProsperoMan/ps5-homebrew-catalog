@@ -2,7 +2,7 @@
 
 A small public catalog of BlackBearReloaded's titled PS5 homebrew. The current entries are `PPSA99001` through `PPSA99008`.
 
-Each `apps/PPSAxxxxx.json` file contains exactly nine fields: `titleid`, `name`, `kind`, `description`, `license`, `author`, `version`, `source_repo`, and `artifact_url`. Artifact URLs point directly to versioned ZIP assets in the publisher's GitHub Releases.
+Each `apps/PPSAxxxxx.json` file contains exactly ten fields: `titleid`, `name`, `kind`, `description`, `license`, `author`, `version`, `source_repo`, `artifact_url`, and `icon_url`. Artifact URLs point directly to versioned ZIP assets in the publisher's GitHub Releases. Icon URLs point directly to image files.
 
 Validate changes with:
 

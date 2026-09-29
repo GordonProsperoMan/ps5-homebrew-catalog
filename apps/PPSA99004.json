@@ -7,5 +7,6 @@
   "author": "BlackBearReloaded",
   "version": "01.000.000",
   "source_repo": "https://github.com/blackbearreloaded/ProsperoAI",
-  "artifact_url": "https://github.com/blackbearreloaded/ProsperoAI/releases/download/01.000.000/PPSA99004.zip"
+  "artifact_url": "https://github.com/blackbearreloaded/ProsperoAI/releases/download/01.000.000/PPSA99004.zip",
+  "icon_url": "https://raw.githubusercontent.com/blackbearreloaded/ProsperoAI/01.000.000/sce_sys/icon0.png"
 }

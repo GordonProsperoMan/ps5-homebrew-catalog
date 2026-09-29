@@ -7,5 +7,6 @@
   "author": "BlackBearReloaded",
   "version": "01.000.000",
   "source_repo": "https://github.com/blackbearreloaded/ProsperoPuzzles",
-  "artifact_url": "https://github.com/blackbearreloaded/ProsperoPuzzles/releases/download/01.000.000/PPSA99006.zip"
+  "artifact_url": "https://github.com/blackbearreloaded/ProsperoPuzzles/releases/download/01.000.000/PPSA99006.zip",
+  "icon_url": "https://raw.githubusercontent.com/blackbearreloaded/ProsperoPuzzles/01.000.000/sce_sys/icon0.png"
 }

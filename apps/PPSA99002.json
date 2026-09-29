@@ -7,5 +7,6 @@
   "author": "BlackBearReloaded",
   "version": "01.000.060",
   "source_repo": "https://github.com/blackbearreloaded/ProsperoLight",
-  "artifact_url": "https://github.com/blackbearreloaded/ProsperoLight/releases/download/01.000.060/PPSA99002.zip"
+  "artifact_url": "https://github.com/blackbearreloaded/ProsperoLight/releases/download/01.000.060/PPSA99002.zip",
+  "icon_url": "https://raw.githubusercontent.com/blackbearreloaded/ProsperoLight/01.000.060/sce_sys/icon0.png"
 }

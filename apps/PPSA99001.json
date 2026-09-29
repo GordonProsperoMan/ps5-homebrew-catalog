@@ -7,5 +7,6 @@
   "author": "BlackBearReloaded",
   "version": "01.000.005",
   "source_repo": "https://github.com/blackbearreloaded/ProsperoRadio",
-  "artifact_url": "https://github.com/blackbearreloaded/ProsperoRadio/releases/download/01.000.005/PPSA99001.zip"
+  "artifact_url": "https://github.com/blackbearreloaded/ProsperoRadio/releases/download/01.000.005/PPSA99001.zip",
+  "icon_url": "https://raw.githubusercontent.com/blackbearreloaded/ProsperoRadio/01.000.005/sce_sys/icon0.png"
 }

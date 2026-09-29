@@ -7,5 +7,6 @@
   "author": "BlackBearReloaded",
   "version": "0.2.0-alpha.1",
   "source_repo": "https://github.com/blackbearreloaded/ps5-yamagi-quake2",
-  "artifact_url": "https://github.com/blackbearreloaded/ps5-yamagi-quake2/releases/download/v0.2.0-alpha.1/PPSA99007.zip"
+  "artifact_url": "https://github.com/blackbearreloaded/ps5-yamagi-quake2/releases/download/v0.2.0-alpha.1/PPSA99007.zip",
+  "icon_url": "https://raw.githubusercontent.com/blackbearreloaded/ps5-yamagi-quake2/v0.2.0-alpha.1/sce_sys/icon0.png"
 }

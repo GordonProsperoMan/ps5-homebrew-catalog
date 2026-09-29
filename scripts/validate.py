@@ -10,7 +10,7 @@ from urllib.parse import urlsplit
 ROOT = Path(__file__).resolve().parents[1]
 FIELDS = {
     "titleid", "name", "kind", "description", "license",
-    "author", "version", "source_repo", "artifact_url",
+    "author", "version", "source_repo", "artifact_url", "icon_url",
 }
 TITLE_ID = re.compile(r"PPSA9900[1-9]\Z")
 REPO_PART = re.compile(r"[A-Za-z0-9_.-]+\Z")
@@ -33,7 +33,7 @@ def check(condition, message):
 def validate(path):
     check(not path.is_symlink() and path.stat().st_size <= 8192, "unsafe or oversized JSON file")
     data = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=unique_keys)
-    check(isinstance(data, dict) and data.keys() == FIELDS, "expected exactly nine metadata fields")
+    check(isinstance(data, dict) and data.keys() == FIELDS, "expected exactly ten metadata fields")
     for field in FIELDS:
         value = data[field]
         check(isinstance(value, str) and 0 < len(value) <= 500 and value.strip() == value,
@@ -54,6 +54,10 @@ def validate(path):
     check(artifact.scheme == "https" and artifact.netloc == "github.com"
           and re.fullmatch(r"[^/]+/[^/]+\.zip", suffix)
           and not artifact.query and not artifact.fragment, "invalid artifact_url")
+    icon = urlsplit(data["icon_url"])
+    check(icon.scheme == "https" and icon.hostname and not icon.username
+          and not icon.password and icon.path.lower().endswith((".png", ".jpg", ".jpeg", ".webp")),
+          "invalid icon_url")
     return data
 
 
