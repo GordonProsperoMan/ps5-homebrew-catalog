@@ -144,6 +144,8 @@ code { font-family: var(--mono); font-size: 0.86em; padding: 0.1em 0.4em; border
 .binder__title { margin: 0; font: 800 clamp(2rem, 4vw, 3rem)/1 var(--display); letter-spacing: -0.03em; }
 .binder__count { color: var(--muted); font-weight: 500; white-space: nowrap; }
 html:not(.js) .js-only { display: none !important; }
+html:not([data-view="list"]) [data-view-panel="list"],
+html[data-view="list"] [data-view-panel="cards"] { display: none !important; }
 
 .toolbar {
   position: sticky;
@@ -166,10 +168,10 @@ html:not(.js) .js-only { display: none !important; }
 .search input:focus { outline: none; border-color: transparent; box-shadow: 0 0 0 2px var(--cyan), 0 0 24px rgba(43, 228, 255, 0.3); }
 
 .views { display: inline-flex; flex: none; gap: 4px; padding: 4px; border-radius: 14px; background: rgba(20, 20, 28, 0.9); border: 1px solid var(--line); }
-.view { display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: 10px; color: var(--muted); font: 600 13px/1 var(--display); text-decoration: none; }
+.view { display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border: 0; border-radius: 10px; background: none; color: var(--muted); font: 600 13px/1 var(--display); text-decoration: none; cursor: pointer; }
 .view svg { width: 18px; height: 18px; }
 .view:hover { color: #fff; }
-.view[aria-current="page"] { background: #fff; color: #120d1f; }
+.view[aria-pressed="true"] { background: #fff; color: #120d1f; }
 
 .toolbar__filters { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 14px; margin-top: 12px; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }

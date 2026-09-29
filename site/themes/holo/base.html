@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="$css">
 <script src="$js"></script>
 </head>
-<body class="$page_class">
+<body class="$page_class" data-base="$base">
 <a class="skip" href="#main">Skip to content</a>
 <div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
 <header class="top">
@@ -29,7 +29,7 @@
     <a class="logo" href="$base"><span class="logo__mark" aria-hidden="true"></span><span class="logo__word">Homebrew<em>Collection</em></span></a>
     <nav class="top__nav" aria-label="Main">
       <a href="${base}#binder">Cards</a>
-      <a href="${base}list/">List</a>
+      <a href="${base}?view=list#binder">List</a>
       <a class="hide-sm" href="$feed_url">Feed</a>
       <a class="hide-sm" href="$repo">GitHub</a>
       <a class="btn btn--foil btn--sm" href="$submit_url"><span>Add<span class="hide-sm"> your card</span></span></a>

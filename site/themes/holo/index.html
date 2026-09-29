@@ -24,11 +24,17 @@
 <section class="wrap binder" id="binder" aria-labelledby="binder-title">
   <div class="binder__head">
     <h2 id="binder-title">The binder</h2>
-    <span class="binder__count" data-count="{n} card{s}" aria-live="polite">$app_count cards</span>
+    <span class="binder__count" data-count="{n} app{s}" aria-live="polite">$app_count apps</span>
   </div>
 $toolbar
-  <ul class="cards" data-grid>
+  <ul class="cards" data-grid data-view-panel="cards">
 $cards
+  </ul>
+  <div class="list-head" data-view-panel="list" aria-hidden="true">
+    <div class="list-head__cols"><span></span><span>Name</span><span>Type</span><span>Title ID</span><span>Version</span><span>Updated</span><span class="col-dev">Developer</span></div>
+  </div>
+  <ul class="list" data-grid data-view-panel="list">
+$rows
   </ul>
   <p class="empty" data-empty hidden>No card matches these filters. <a href="$submit_url">Print your own.</a></p>
 </section>

@@ -3,15 +3,15 @@
 Output (for the default base path /ps5/):
 
     dist/_headers, dist/_redirects, dist/404.html, dist/robots.txt
-    dist/ps5/index.html                 store front, card view
-    dist/ps5/list/index.html            the same catalog as a compact list
+    dist/ps5/index.html                 the catalog, as cards or a list (?view=list)
     dist/ps5/app/<TITLEID>/index.html   one page per app
     dist/ps5/catalog/v1.json            machine-readable feed
     dist/ps5/assets/…                   content-hashed CSS, JS and icons
 
-Each theme under site/themes/<name>/ provides base.html, index.html (cards),
-list.html (list), toolbar.html (filters shared by both), card.html, row.html,
-app.html, 404.html and style.css. Templates use
+Each theme under site/themes/<name>/ provides base.html, index.html (the
+catalog in both views), toolbar.html (its filters), card.html and row.html (one
+app in each view, with -soon variants), app.html, app-soon.html, 404.html and
+style.css. Templates use
 string.Template placeholders; every metadata value is HTML-escaped before it is
 substituted.
 
@@ -316,28 +316,19 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
     format_options = "".join(f'<option value="{fmt}">{e(FORMAT_LABELS[fmt])}</option>'
                              for fmt in sorted({artifact_format(r) for r in releases}))
 
-    def toolbar(view: str) -> str:
-        return theme_obj.render("toolbar.html", dict(
-            shared, chips="".join(chips), format_options=format_options,
-            cards_current=' aria-current="page"' if view == "cards" else "",
-            list_current=' aria-current="page"' if view == "list" else "",
-        ))
 
     spot = {f"spot_{k}": v for k, v in (numbered[spotlight.titleid] if spotlight else {}).items()}
     others = [icons[r.titleid] for r in releases if r is not spotlight]
     fan = others[:2] + [placeholder] * 2
     index_body = theme_obj.template("index.html").safe_substitute(
-        dict(shared, **spot), toolbar=toolbar("cards"), cards=items("card.html", records),
+        dict(shared, **spot), cards=items("card.html", records), rows=items("row.html", records),
+        toolbar=theme_obj.render("toolbar.html", dict(shared, chips="".join(chips), format_options=format_options)),
         fan_icon_2=e(fan[0]), fan_icon_3=e(fan[1]),
     )
     write_page(root / "index.html", title="PS5 Homebrew Store — community apps, games and tools",
                description=f"Browse {total} PS5 homebrew apps, games and tools. Every download comes from "
                            "the developer's GitHub release and is pinned by SHA-256.",
                canonical=site_url + base, body=index_body, page_class="page-home")
-    list_body = theme_obj.render("list.html", dict(shared, toolbar=toolbar("list"), rows=items("row.html", records)))
-    write_page(root / "list" / "index.html", title="All apps — PS5 Homebrew Store",
-               description=f"All {total} PS5 homebrew apps, games and tools in one list, with search and filters.",
-               canonical=site_url + base + "list/", body=list_body, page_class="page-list")
 
     # App pages.
     for record in records:
@@ -373,7 +364,8 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
         ],
     }
     (root / "catalog").mkdir()
-    (root / "catalog" / "v1.json").write_text(json.dumps(feed, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    (root / "catalog" / "v1.json").write_text(
+        json.dumps(feed, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
 
     # Cloudflare Pages configuration.
     csp = ("default-src 'self'; img-src 'self' data:; style-src 'self' https://fonts.googleapis.com; "
@@ -394,6 +386,9 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
   Cache-Control: public, max-age=300, must-revalidate
 """, encoding="utf-8")
     if base != "/":
-        (out / "_redirects").write_text(f"/ {base} 302\n{base.rstrip('/')} {base} 301\n", encoding="utf-8")
+        (out / "_redirects").write_text(
+            f"/ {base} 302\n{base.rstrip('/')} {base} 301\n"
+            f"{base}list {base}?view=list 301\n{base}list/ {base}?view=list 301\n"
+            f"/favicon.ico {base}favicon.svg 301\n", encoding="utf-8")
     (out / "robots.txt").write_text("User-agent: *\nAllow: /\n", encoding="utf-8")
     return total

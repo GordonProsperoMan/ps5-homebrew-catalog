@@ -11,17 +11,22 @@ dist/
 ├── _headers, _redirects        Cloudflare Pages security headers, caching, / → /ps5/
 ├── 404.html, robots.txt
 └── ps5/
-    ├── index.html              card view: every app as a holographic card
-    ├── list/index.html         list view: compact rows with a quick download button
+    ├── index.html              the catalog: cards, or a compact list (?view=list)
     ├── app/<TITLEID>/          one page per app: download, install steps, sha256
     ├── catalog/v1.json         feed for the console store and other clients
     └── assets/                 content-hashed CSS, JS and WebP icons
 ```
 
-- **Two views, one set of filters.** Cards and List share a toolbar: search,
-  type chips, status (available or coming soon), format and sort (name, title
-  ID, type, recently updated). Filters live in the URL (`?q=…&kind=game&sort=updated`),
-  and the Cards/List switch keeps them, so any filtered view can be linked.
+- **One catalog page, two views.** `/ps5/` holds both the cards and the list;
+  the Cards/List switch changes view in place. Search, type chips, status
+  (available or coming soon), format and sort (name, title ID, type, recently
+  updated) apply to both and live in the URL (`?q=…&kind=game&sort=updated&view=list`),
+  so any filtered view can be linked. The old `/ps5/list/` redirects there.
+- **In-page navigation.** Opening an app fetches its static page and swaps its
+  content in without reloading; Back returns to the catalog with the same
+  filters, view, scroll position and focus. Every app page is still a complete
+  HTML page, so direct links, link previews, search engines and browsers
+  without JavaScript all work.
 - **Mobile-first layout.** On phones the cards form two columns, the list
   collapses to icon, name, a one-line summary and a download button, and the
   type chips scroll sideways.
@@ -60,7 +65,7 @@ dist/
 }
 ```
 
-`apps` holds only installable releases, so a client can install anything in it;
+The feed is minified. `apps` holds only installable releases, so a client can install anything in it;
 reservations are listed separately in `coming_soon`. Both are sorted by title
 ID. `updated` is `null` when the history isn't available. The feed is served with
 `Access-Control-Allow-Origin: *` and a five-minute cache. A breaking change

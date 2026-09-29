@@ -5,10 +5,10 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
       <input type="search" data-search placeholder="Search name, developer or title ID" autocomplete="off" spellcheck="false" enterkeyhint="search">
     </label>
-    <nav class="views" aria-label="View">
-      <a class="view" href="${base}#binder" data-view-link="${base}"$cards_current><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg><span>Cards</span></a>
-      <a class="view" href="${base}list/" data-view-link="${base}list/"$list_current><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg><span>List</span></a>
-    </nav>
+    <div class="views js-only" role="group" aria-label="View">
+      <button type="button" class="view" data-view-button="cards" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg><span>Cards</span></button>
+      <button type="button" class="view" data-view-button="list" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg><span>List</span></button>
+    </div>
   </div>
   <div class="toolbar__filters js-only">
     <div class="chips" role="group" aria-label="Filter by type">$chips</div>

@@ -36,18 +36,20 @@ class SiteBuildTests(unittest.TestCase):
         count, report = self.build()
         self.assertEqual((count, report.failed), (3, False))
         root = self.out / "ps5"
-        for path in ("index.html", "list/index.html", "app/PPSA01234/index.html", "app/PPSA04321/index.html",
+        for path in ("index.html", "app/PPSA01234/index.html", "app/PPSA04321/index.html",
                      "app/PPSA05555/index.html",
                      "catalog/v1.json", "favicon.svg", "404.html"):
             self.assertTrue((root / path).is_file(), path)
         for path in ("_headers", "_redirects", "404.html", "robots.txt"):
             self.assertTrue((self.out / path).is_file(), path)
-        self.assertIn("/ /ps5/ 302", (self.out / "_redirects").read_text(encoding="utf-8"))
+        redirects = (self.out / "_redirects").read_text(encoding="utf-8")
+        self.assertIn("/ /ps5/ 302", redirects)
+        self.assertIn("/ps5/list/ /ps5/?view=list 301", redirects)
+        self.assertFalse((root / "list").exists())
 
     def test_metadata_is_escaped(self):
         self.build()
-        for page in (self.out / "ps5" / "index.html", self.out / "ps5" / "list" / "index.html",
-                     self.out / "ps5" / "app" / "PPSA01234" / "index.html"):
+        for page in (self.out / "ps5" / "index.html", self.out / "ps5" / "app" / "PPSA01234" / "index.html"):
             html = page.read_text(encoding="utf-8")
             self.assertNotIn("<script>alert", html)
             self.assertNotIn("<b>tags</b>", html)
@@ -72,18 +74,24 @@ class SiteBuildTests(unittest.TestCase):
         self.assertIn("Not released yet", page)
         self.assertNotIn("rel=\"nofollow\"", page)
         self.assertNotIn("None", page)
-        for listing in ("index.html", "list/index.html"):
-            html = (root / listing).read_text(encoding="utf-8")
-            self.assertIn('data-status="soon"', html)
-            self.assertIn('data-status="available"', html)
+        html = (root / "index.html").read_text(encoding="utf-8")
+        self.assertEqual(html.count('data-status="soon"'), 2)
+        self.assertIn('data-status="available"', html)
 
-    def test_list_page_has_rows_and_filters(self):
+    def test_catalog_page_holds_both_views_and_filters(self):
         self.build()
-        html = (self.out / "ps5" / "list" / "index.html").read_text(encoding="utf-8")
+        html = (self.out / "ps5" / "index.html").read_text(encoding="utf-8")
         self.assertEqual(html.count('class="lrow '), 3)
-        for hook in ("data-search", "data-status-filter", "data-format-filter", "data-sort", 'data-view-link'):
+        self.assertEqual(html.count('class="card-item"'), 3)
+        self.assertEqual(html.count("data-grid"), 2)
+        for hook in ("data-search", "data-status-filter", "data-format-filter", "data-sort",
+                     'data-view-button="cards"', 'data-view-button="list"', 'data-base="/ps5/"'):
             self.assertIn(hook, html)
-        self.assertIn('aria-current="page"', html)
+
+    def test_feed_is_minified(self):
+        self.build()
+        text = (self.out / "ps5" / "catalog" / "v1.json").read_text(encoding="utf-8")
+        self.assertEqual(text.count("\n"), 1)
 
     def test_install_steps_follow_format(self):
         self.build()
