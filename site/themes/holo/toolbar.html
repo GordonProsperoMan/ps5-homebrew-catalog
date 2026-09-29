@@ -1,0 +1,28 @@
+<div class="toolbar" data-toolbar>
+  <div class="toolbar__main">
+    <label class="search js-only">
+      <span class="sr-only">Search</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
+      <input type="search" data-search placeholder="Search name, developer or title ID" autocomplete="off" spellcheck="false" enterkeyhint="search">
+    </label>
+    <nav class="views" aria-label="View">
+      <a class="view" href="${base}#binder" data-view-link="${base}"$cards_current><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg><span>Cards</span></a>
+      <a class="view" href="${base}list/" data-view-link="${base}list/"$list_current><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></svg><span>List</span></a>
+    </nav>
+  </div>
+  <div class="toolbar__filters js-only">
+    <div class="chips" role="group" aria-label="Filter by type">$chips</div>
+    <div class="selects">
+      <label class="select"><span class="sr-only">Status</span>
+        <select data-status-filter><option value="all">Any status</option><option value="available">Available</option><option value="soon">Coming soon</option></select>
+      </label>
+      <label class="select"><span class="sr-only">Format</span>
+        <select data-format-filter><option value="all">All formats</option>$format_options</select>
+      </label>
+      <label class="select"><span class="sr-only">Sort</span>
+        <select data-sort><option value="name">Sort: Name</option><option value="titleid">Sort: Title ID</option><option value="kind">Sort: Type</option><option value="updated">Sort: Recently updated</option></select>
+      </label>
+      <button type="button" class="reset" data-reset hidden>Clear</button>
+    </div>
+  </div>
+</div>

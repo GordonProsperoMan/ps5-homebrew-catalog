@@ -3,13 +3,15 @@
 Output (for the default base path /ps5/):
 
     dist/_headers, dist/_redirects, dist/404.html, dist/robots.txt
-    dist/ps5/index.html                 store front
+    dist/ps5/index.html                 store front, card view
+    dist/ps5/list/index.html            the same catalog as a compact list
     dist/ps5/app/<TITLEID>/index.html   one page per app
     dist/ps5/catalog/v1.json            machine-readable feed
     dist/ps5/assets/…                   content-hashed CSS, JS and icons
 
-Each theme under site/themes/<name>/ provides base.html, index.html, app.html,
-404.html, card.html, optionally shelf.html, and style.css. Templates use
+Each theme under site/themes/<name>/ provides base.html, index.html (cards),
+list.html (list), toolbar.html (filters shared by both), card.html, row.html,
+app.html, 404.html and style.css. Templates use
 string.Template placeholders; every metadata value is HTML-escaped before it is
 substituted.
 
@@ -46,11 +48,9 @@ ICON_SIZE = 512
 FONT_URL = "https://fonts.googleapis.com/css2?{families}&display=swap"
 THEMES = {
     # name: (Google Fonts families, browser theme-color)
-    "nebula": ("family=Sora:wght@300;400;500;600;700;800", "#05060f"),
-    "cartridge": ("family=Press+Start+2P&family=VT323", "#1b1340"),
     "holo": ("family=Unbounded:wght@500;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700", "#0b0b10"),
 }
-DEFAULT_THEME = "nebula"
+DEFAULT_THEME = "holo"
 FORMAT_LABELS = {"zip": "ZIP folder", "ffpkg": "FFPKG image", "ffpfsc": "FFPFSC image"}
 KIND_LABELS = {"app": "App", "game": "Game", "tool": "Tool"}
 KIND_PLURALS = {"app": "Apps", "game": "Games", "tool": "Tools"}
@@ -73,6 +73,43 @@ def source_commit() -> str:
                               capture_output=True, text=True).stdout.strip()
     except (OSError, subprocess.CalledProcessError):
         return "unknown"
+
+
+def _git(*args: str) -> str | None:
+    try:
+        return subprocess.run(["git", *args], cwd=ROOT, check=True, capture_output=True, text=True).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
+def last_updated(apps_dir: Path) -> dict[str, str]:
+    """Map record filename to the ISO commit date of the last commit that changed it.
+
+    CI and Cloudflare may clone shallowly, which would date every record to the
+    newest commit, so the history is deepened first when possible. Records
+    outside the repository, or without history, are left out.
+    """
+    try:
+        relative = apps_dir.resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        return {}
+    if (_git("rev-parse", "--is-shallow-repository") or "").strip() == "true":
+        _git("fetch", "--quiet", "--unshallow")
+    output = _git("log", "--format=%x00%cI", "--name-only", "--no-renames", "--", relative)
+    dates: dict[str, str] = {}
+    date = None
+    for line in (output or "").splitlines():
+        if line.startswith("\0"):
+            date = line[1:]
+        elif line and date:
+            dates.setdefault(Path(line).name, date)
+    return dates
+
+
+def display_date(iso: str) -> str:
+    months = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+    year, month, day = iso[:10].split("-")
+    return f"{months[int(month) - 1]} {int(day)}, {year}"
 
 
 def normalize_base(base: str) -> str:
@@ -180,7 +217,7 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
     icons: dict[str, str] = {}
     for record in records:
         icons[record.titleid] = placeholder
-        if not fetch_icons:
+        if not fetch_icons or "icon_url" not in record.data:
             continue
         try:
             content, extension = process_icon(artifacts.fetch_small(record.data["icon_url"], artifacts.MAX_ICON_BYTES))
@@ -191,25 +228,35 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
 
     kinds = {kind: [r for r in records if r.data["kind"] == kind] for kind in KINDS}
     total = len(records)
+    updated = last_updated(apps_dir)
 
     def page_url(record: Record) -> str:
         return f"{base}app/{record.titleid}/"
 
     def app_values(record: Record, number: int) -> dict:
         d = record.data
-        fmt = artifact_format(record)
         values = {k: e(v) for k, v in d.items()}
         values.update(
             url=e(page_url(record)),
             icon=e(icons[record.titleid]),
             kind_label=e(KIND_LABELS[d["kind"]]),
-            format=e(fmt),
-            format_label=e(FORMAT_LABELS[fmt]),
-            artifact_name=e(unquote(record.asset_name)),
             source_short=e(f"{record.owner}/{record.repo}"),
-            release_url=e(f"{d['source_repo']}/releases/tag/{d['artifact_url'].split('/releases/download/')[1].split('/')[0]}"),
-            tag=e(record.tag),
+            status="soon" if record.reserved else "available",
+            format="",
+        )
+        if not record.reserved:
+            fmt = artifact_format(record)
+            values.update(
+                format=e(fmt),
+                format_label=e(FORMAT_LABELS[fmt]),
+                artifact_name=e(unquote(record.asset_name)),
+                release_url=e(f"{d['source_repo']}/releases/tag/{d['artifact_url'].split('/releases/download/')[1].split('/')[0]}"),
+                tag=e(record.tag),
+            )
+        values.update(
             number=f"{number:03d}",
+            updated=e(display_date(updated[record.path.name])) if record.path.name in updated else "—",
+            updated_iso=e(updated.get(record.path.name, "")),
             total=f"{total:03d}",
             search_text=e(" ".join((d["name"], d["author"], d["titleid"], d["description"], d["kind"]))),
         )
@@ -217,13 +264,19 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
 
     numbered = {r.titleid: app_values(r, i) for i, r in enumerate(sorted(records, key=lambda r: r.titleid), 1)}
 
-    def cards(selection: list[Record], in_grid: bool) -> str:
+    def items(template: str, selection: list[Record]) -> str:
+        """Render records with the data attributes the filter and sort script reads."""
         rendered = []
         for record in selection:
             values = dict(numbered[record.titleid])
-            values["grid_attrs"] = (f' data-app data-app-kind="{values["kind"]}" data-search-text="{values["search_text"]}"'
-                                    if in_grid else "")
-            rendered.append(theme_obj.render("card.html", values))
+            values["grid_attrs"] = (
+                f' data-app data-app-kind="{values["kind"]}" data-status="{values["status"]}"'
+                f' data-format="{values["format"]}"'
+                f' data-name="{e(record.data["name"].casefold())}" data-titleid="{values["titleid"]}"'
+                f' data-updated="{values["updated_iso"]}" data-search-text="{values["search_text"]}"'
+            )
+            name = template.replace(".html", "-soon.html") if record.reserved else template
+            rendered.append(theme_obj.render(name, values))
         return "\n".join(rendered)
 
     shared = {
@@ -241,10 +294,9 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
         "game_count": len(kinds["game"]),
         "apps_only_count": len(kinds["app"]),
         "tool_count": len(kinds["tool"]),
+        "soon_count": sum(1 for r in records if r.reserved),
         "feed_url": f"{base}catalog/v1.json",
     }
-    for key in ("app_count", "developer_count", "game_count", "apps_only_count", "tool_count"):
-        shared[f"{key}_pad"] = f"{shared[key]:03d}"
     base_tpl = theme_obj.template("base.html")
 
     def write_page(path: Path, *, title: str, description: str, canonical: str, body: str,
@@ -255,33 +307,47 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
             og_image=e(og_image or site_url + base + "favicon.svg"), body=body, page_class=page_class,
         ), encoding="utf-8")
 
-    # Store front.
-    spotlight = records[int(hashlib.sha256(commit.encode()).hexdigest(), 16) % total] if total else None
+    # Store front: the same catalog as cards (index) and as a list, sharing one toolbar.
+    releases = [r for r in records if not r.reserved]
+    spotlight = releases[int(hashlib.sha256(commit.encode()).hexdigest(), 16) % len(releases)] if releases else None
     chips = [f'<button type="button" class="chip" data-kind="all" aria-pressed="true">All <span>{total}</span></button>']
-    chips += [f'<button type="button" class="chip" data-kind="{kind}" aria-pressed="false">{KIND_PLURALS[kind]} <span>{len(items)}</span></button>'
-              for kind, items in kinds.items() if items]
-    shelves = "\n".join(
-        theme_obj.render("shelf.html", dict(shared, kind=kind, kind_plural=KIND_PLURALS[kind],
-                                            count=len(items), cards=cards(items, in_grid=False)))
-        for kind, items in kinds.items() if items
-    )
+    chips += [f'<button type="button" class="chip" data-kind="{kind}" aria-pressed="false">{KIND_PLURALS[kind]} <span>{len(group)}</span></button>'
+              for kind, group in kinds.items() if group]
+    format_options = "".join(f'<option value="{fmt}">{e(FORMAT_LABELS[fmt])}</option>'
+                             for fmt in sorted({artifact_format(r) for r in releases}))
+
+    def toolbar(view: str) -> str:
+        return theme_obj.render("toolbar.html", dict(
+            shared, chips="".join(chips), format_options=format_options,
+            cards_current=' aria-current="page"' if view == "cards" else "",
+            list_current=' aria-current="page"' if view == "list" else "",
+        ))
+
     spot = {f"spot_{k}": v for k, v in (numbered[spotlight.titleid] if spotlight else {}).items()}
-    fan = [icons[r.titleid] for r in records[:3]] + [placeholder] * 3
+    others = [icons[r.titleid] for r in releases if r is not spotlight]
+    fan = others[:2] + [placeholder] * 2
     index_body = theme_obj.template("index.html").safe_substitute(
-        dict(shared, **spot), chips="".join(chips), shelves=shelves, cards=cards(records, in_grid=True),
-        fan_icon_1=e(fan[0]), fan_icon_2=e(fan[1]), fan_icon_3=e(fan[2]),
+        dict(shared, **spot), toolbar=toolbar("cards"), cards=items("card.html", records),
+        fan_icon_2=e(fan[0]), fan_icon_3=e(fan[1]),
     )
     write_page(root / "index.html", title="PS5 Homebrew Store — community apps, games and tools",
                description=f"Browse {total} PS5 homebrew apps, games and tools. Every download comes from "
                            "the developer's GitHub release and is pinned by SHA-256.",
                canonical=site_url + base, body=index_body, page_class="page-home")
+    list_body = theme_obj.render("list.html", dict(shared, toolbar=toolbar("list"), rows=items("row.html", records)))
+    write_page(root / "list" / "index.html", title="All apps — PS5 Homebrew Store",
+               description=f"All {total} PS5 homebrew apps, games and tools in one list, with search and filters.",
+               canonical=site_url + base + "list/", body=list_body, page_class="page-list")
 
     # App pages.
     for record in records:
-        values = dict(shared, **numbered[record.titleid], steps=_install_steps(record))
+        values = dict(shared, **numbered[record.titleid])
+        if not record.reserved:
+            values["steps"] = _install_steps(record)
         write_page(root / "app" / record.titleid / "index.html",
                    title=f"{record.data['name']} — PS5 Homebrew Store", description=record.data["description"],
-                   canonical=site_url + page_url(record), body=theme_obj.render("app.html", values),
+                   canonical=site_url + page_url(record),
+                   body=theme_obj.render("app-soon.html" if record.reserved else "app.html", values),
                    og_image=site_url + icons[record.titleid], page_class="page-app")
 
     # 404 page, served by Cloudflare Pages for unknown paths.
@@ -296,8 +362,14 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
         "homepage": site_url + base,
         "source": {"repository": REPO_URL, "commit": commit},
         "apps": [
-            {**r.data, "format": artifact_format(r), "page": site_url + page_url(r), "icon": site_url + icons[r.titleid]}
-            for r in sorted(records, key=lambda r: r.titleid)
+            {**r.data, "format": artifact_format(r), "updated": updated.get(r.path.name),
+             "page": site_url + page_url(r), "icon": site_url + icons[r.titleid]}
+            for r in sorted(releases, key=lambda r: r.titleid)
+        ],
+        "coming_soon": [
+            {**r.data, "updated": updated.get(r.path.name),
+             "page": site_url + page_url(r), "icon": site_url + icons[r.titleid]}
+            for r in sorted((r for r in records if r.reserved), key=lambda r: r.titleid)
         ],
     }
     (root / "catalog").mkdir()

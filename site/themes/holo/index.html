@@ -11,6 +11,7 @@
       <div><dt>Cards</dt><dd>$app_count</dd></div>
       <div><dt>Games</dt><dd>$game_count</dd></div>
       <div><dt>Developers</dt><dd>$developer_count</dd></div>
+      <div><dt>Coming soon</dt><dd>$soon_count</dd></div>
     </dl>
   </div>
   <div class="fan" aria-hidden="true">
@@ -25,16 +26,9 @@
     <h2 id="binder-title">The binder</h2>
     <span class="binder__count" data-count="{n} card{s}" aria-live="polite">$app_count cards</span>
   </div>
-  <div class="toolbar">
-    <label class="search">
-      <span class="sr-only">Search the collection</span>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
-      <input type="search" data-search placeholder="Find a card by name, developer or title ID" autocomplete="off" spellcheck="false">
-    </label>
-    <div class="chips" role="group" aria-label="Filter by type">$chips</div>
-  </div>
+$toolbar
   <ul class="cards" data-grid>
 $cards
   </ul>
-  <p class="empty" data-empty hidden>No card like that in the set yet. <a href="$submit_url">Print your own.</a></p>
+  <p class="empty" data-empty hidden>No card matches these filters. <a href="$submit_url">Print your own.</a></p>
 </section>

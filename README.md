@@ -66,6 +66,10 @@ One file per app, named after its title ID, with exactly these eleven string fie
 
 Field rules and limits are in **[Metadata format](docs/metadata.md)**.
 
+Not released yet? You can **reserve a title ID** with a short `"status": "coming-soon"`
+record; the website shows it as coming soon. See
+[Reserving a title ID](docs/submitting.md#reserving-a-title-id).
+
 ## What gets checked
 
 | Check | Pull request | Push to `main` | Weekly |
@@ -85,9 +89,10 @@ to run on untrusted pull requests.
 
 ## Website
 
-Cloudflare Pages rebuilds the store from `main` after every merge. The build
-also publishes a JSON feed at `/ps5/catalog/v1.json` for the console store and
-other clients. See **[Website](docs/website.md)** for the output, themes, local
+Cloudflare Pages rebuilds the store from `main` after every merge. It has a
+card view and a list view with shared search, filters and sorting, works on
+phones, shows when each app was last updated, and publishes a JSON feed at
+`/ps5/catalog/v1.json` for the console store and other clients. See **[Website](docs/website.md)** for the output, themes, local
 preview and Cloudflare setup.
 
 ## Trust and safety

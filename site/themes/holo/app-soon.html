@@ -1,0 +1,34 @@
+<section class="wrap showcase" aria-labelledby="app-title">
+  <a class="back" href="$base">← Back to the binder</a>
+  <div class="showcase__grid">
+    <div class="showcase__card">
+      <div class="holo holo--$kind holo--big holo--soon" data-tilt="10">
+        <span class="holo__frame">
+          <span class="holo__top"><span class="holo__name">$name</span><span class="holo__type">$kind_label</span></span>
+          <span class="holo__art"><img src="$icon" alt="$name icon" width="512" height="512"><span class="soon-badge">Coming soon</span></span>
+          <span class="holo__strip"><span>$titleid · reserved</span><span>#$number</span></span>
+          <span class="holo__text">$description</span>
+          <span class="holo__bottom"><span>$author</span><span>$updated</span></span>
+        </span>
+        <span class="holo__glare" aria-hidden="true"></span>
+      </div>
+    </div>
+    <div class="showcase__info">
+      <p class="kicker"><span class="spark" aria-hidden="true">✦</span> Coming soon · $kind_label</p>
+      <h1 class="showcase__title" id="app-title">$name</h1>
+      <p class="byline">by $author</p>
+      <p class="lead">$description</p>
+      <div class="soon-note">
+        <strong>Not released yet.</strong> $author has reserved title ID <code>$titleid</code> for this $kind_label. The card becomes downloadable when its first release is listed.
+      </div>
+      <div class="actions">
+        <a class="btn btn--ghost btn--lg" href="$source_repo">Follow the project</a>
+      </div>
+      <dl class="attrs">
+        <div><dt>Title ID</dt><dd>$titleid</dd></div>
+        <div><dt>Status</dt><dd>Reserved</dd></div>
+        <div><dt>Reserved</dt><dd><time datetime="$updated_iso">$updated</time></dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
