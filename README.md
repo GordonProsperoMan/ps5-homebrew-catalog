@@ -201,3 +201,5 @@ Thanks to John Törnblom (ps5-payload-dev) for the [PS5 Payload SDK](https://git
 
 The catalog tooling and documentation are licensed under [GPL-3.0](LICENSE).
 Each listed app is distributed by its own developer under the license in its record.
+
+This project was developed with AI assistance from OpenAI and/or Anthropic tools.
