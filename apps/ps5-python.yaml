@@ -1,0 +1,12 @@
+id: blackbearreloaded.ps5-python
+title: PS5 Python
+kind: runtime
+author: BlackBearReloaded
+summary: CPython build for PS5.
+description: A CPython runtime build for PS5 homebrew development.
+source_url: https://github.com/blackbearreloaded/ps5-python
+license: GPL-3.0
+categories:
+- Developer tools
+- Runtime
+release_page: https://github.com/blackbearreloaded/ps5-python/releases/tag/v0.1.0

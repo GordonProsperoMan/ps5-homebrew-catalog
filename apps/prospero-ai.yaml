@@ -1,0 +1,23 @@
+id: blackbearreloaded.prospero-ai
+title: ProsperoAI
+kind: app
+author: BlackBearReloaded
+summary: Local LLM chat app for PS5.
+description: Chat with a local language model running on the PS5 GPU.
+source_url: https://github.com/blackbearreloaded/ProsperoAI
+license: GPL-3.0
+categories:
+- AI
+title_id: PPSA99004
+icon: assets/icons/PPSA99004.png
+release:
+  version: 01.000.000
+  sequence: 1
+  channel: stable
+  page_url: https://github.com/blackbearreloaded/ProsperoAI/releases/tag/01.000.000
+  url: https://github.com/blackbearreloaded/ProsperoAI/releases/download/01.000.000/PPSA99004.zip
+  sha256: 19c2bacebf6fb1587b32d458fb5af2fb472d9f3844085993b0f1a30669dc0c69
+  download_bytes: 65361401
+  installed_bytes: 131619649
+  archive_root: PPSA99004
+installation_verified: false

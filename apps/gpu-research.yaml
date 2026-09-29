@@ -1,0 +1,11 @@
+id: blackbearreloaded.gpu-research
+title: GPU research
+kind: research
+author: BlackBearReloaded
+summary: Public PS5 GPU research.
+description: Research and notes about PS5 graphics hardware.
+source_url: https://github.com/blackbearreloaded/ps5-gpu-research
+license: GPL-3.0
+categories:
+- Research
+- Graphics

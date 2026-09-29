@@ -1,0 +1,23 @@
+id: blackbearreloaded.yamagi-quake2
+title: Yamagi Quake II
+kind: game
+author: BlackBearReloaded
+summary: Native PS5 port of Yamagi Quake II.
+description: Quake II port with OpenGL rendering, controller support, audio, and saves.
+source_url: https://github.com/blackbearreloaded/ps5-yamagi-quake2
+license: GPL-3.0
+categories:
+- Games
+title_id: PPSA99007
+icon: assets/icons/PPSA99007.png
+release:
+  version: 0.2.0-alpha.1
+  sequence: 1
+  channel: alpha
+  page_url: https://github.com/blackbearreloaded/ps5-yamagi-quake2/releases/tag/v0.2.0-alpha.1
+  url: https://github.com/blackbearreloaded/ps5-yamagi-quake2/releases/download/v0.2.0-alpha.1/PPSA99007.zip
+  sha256: 4fa5da07498fe64ffc67229eed2347e0ddffd5073f1fea248ba5e69307229a70
+  download_bytes: 58066037
+  installed_bytes: 99482135
+  archive_root: PPSA99007
+installation_verified: false

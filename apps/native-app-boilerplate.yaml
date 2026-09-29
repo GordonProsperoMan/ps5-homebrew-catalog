@@ -1,0 +1,11 @@
+id: blackbearreloaded.native-app-boilerplate
+title: Native app boilerplate
+kind: tool
+author: BlackBearReloaded
+summary: Starter project for native PS5 apps.
+description: C/C++ homebrew template with Windows and WSL build and packaging tools.
+source_url: https://github.com/blackbearreloaded/ps5-native-app-boilerplate
+license: GPL-3.0
+categories:
+- Developer tools
+release_page: https://github.com/blackbearreloaded/ps5-native-app-boilerplate/releases/tag/01.000.000
