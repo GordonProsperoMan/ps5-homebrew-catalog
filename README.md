@@ -158,7 +158,8 @@ catalog/              Checker, verifier and site generator (Python standard libr
 site/                 Website themes, templates and shared assets
 tests/                Unit and end-to-end tests for the checker
 docs/                 Submission guide, formats, policy, automation, website
-.github/workflows/    Submission check, CI and deploy, daily health check
+docs/maintainers/     Maintainer runbooks (listing a developer's app, for people and AI agents)
+.github/workflows/    Submission check, CI and deploy, daily health check, release updates
 ```
 
 ## Run the checks locally
