@@ -155,7 +155,7 @@ Report these to the maintainer instead of opening a pull request:
 | The title ID is already listed by a different project | Title IDs are first come, first served; a maintainer decides. |
 | The repository is a fork or repackage of another developer's app | Provenance must be the original developer. |
 | The app is obviously for piracy, contains commercial content, or the README asks not to be redistributed | Refused by the review policy. |
-| The app centres on running or installing game backups, or its releases ship emulators or files that look extracted from commercial games | A maintainer decides whether it's in scope. |
+| The only file that would be listed ships emulators or files that look extracted from commercial games | Commercial content can't be linked. Backup managers themselves are in scope: list only the app's own file (use `--asset`), never a companion pack, and say so in the pull request. |
 | The repository is archived with no recent release | Probably abandoned; a maintainer decides. |
 | `check`, `verify` or the tests report errors | The record isn't valid. |
 
