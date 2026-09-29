@@ -11,6 +11,9 @@ from .report import Report
 def verify_record(record: Record, github: GitHub, report: Report, download: bool = True) -> None:
     name = f"apps/{record.path.name}"
     data = record.data
+    if record.reserved:
+        _verify_reservation(name, record, github, report)
+        return
     try:
         repo = github.repo(record.owner, record.repo)
         if repo is None or repo.get("private"):
@@ -48,6 +51,27 @@ def verify_record(record: Record, github: GitHub, report: Report, download: bool
     _verify_icon(name, data["icon_url"], report)
 
 
+def _verify_reservation(name: str, record: Record, github: GitHub, report: Report) -> None:
+    """Reservations have no release yet; the repository may still be private."""
+    try:
+        repo = github.repo(record.owner, record.repo)
+        if github.account_type(record.owner) is None:
+            report.error(name, f"GitHub account {record.owner} does not exist")
+            return
+    except GitHubError as error:
+        report.error(name, str(error))
+        return
+    if repo is None:
+        report.notice(name, "reservation: the source repository is private or not created yet")
+    elif f"https://github.com/{repo['full_name']}" != record.data["source_repo"]:
+        report.error(name, f"source_repo must use the canonical URL https://github.com/{repo['full_name']}")
+        return
+    else:
+        report.notice(name, "reservation: release checks run when it becomes a release")
+    if "icon_url" in record.data:
+        _verify_icon(name, record.data["icon_url"], report)
+
+
 def _check_license(name: str, license_value: str, repo: dict, report: Report) -> None:
     detected = (repo.get("license") or {}).get("spdx_id")
     if not detected or detected == "NOASSERTION":
@@ -83,6 +107,8 @@ def _verify_icon(name: str, url: str, report: Report) -> None:
 
 def newer_release(record: Record, github: GitHub) -> str | None:
     """Return the tag of the newest published release when it differs from the record."""
+    if record.reserved:
+        return None
     for release in github.releases(record.owner, record.repo):
         if not release.get("draft"):
             tag = release.get("tag_name")

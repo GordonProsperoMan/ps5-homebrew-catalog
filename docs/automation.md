@@ -59,6 +59,9 @@ through a pull request.
 
 Re-verifies every record end to end (release, digest, download, icon)
 and reports projects that have published a newer release than the one listed.
+It also warns about reservations that haven't changed in 180 days. For a
+reservation, only the account, repository URL and optional icon are checked,
+because there is no release yet.
 A failure notifies maintainers; see the [review policy](review-policy.md) for
 how broken listings are handled.
 

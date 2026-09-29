@@ -13,8 +13,8 @@ class FakeGitHub:
         self.owner_type = owner_type
         self.public_members = set(public_members)
 
-    def repo(self, owner, name):
-        return {"owner": {"type": self.owner_type}}
+    def account_type(self, login):
+        return self.owner_type
 
     def is_public_member(self, org, user):
         return user in self.public_members

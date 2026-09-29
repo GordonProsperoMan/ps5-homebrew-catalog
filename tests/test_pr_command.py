@@ -58,7 +58,7 @@ class PullRequestCommandTests(unittest.TestCase):
         with mock.patch.object(cli, "ROOT", self.clone), \
                 mock.patch.object(cli, "APPS", self.clone / "apps"), \
                 mock.patch.object(cli, "verify_record", lambda r, g, rep: verified.append(r.titleid)), \
-                mock.patch.object(cli, "GitHub", lambda: mock.Mock(repo=lambda o, n: {"owner": {"type": "User"}})), \
+                mock.patch.object(cli, "GitHub", lambda: mock.Mock(account_type=lambda login: "User")), \
                 mock.patch.dict(os.environ, {"GITHUB_EVENT_PATH": str(event), "GITHUB_STEP_SUMMARY": ""}), \
                 mock.patch("sys.stdout"), mock.patch("sys.stderr"):
             status = cli.main(["pr"])

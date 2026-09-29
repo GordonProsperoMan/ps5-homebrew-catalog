@@ -5,7 +5,7 @@ from pathlib import Path
 from catalog.records import load_catalog, load_record
 from catalog.report import Report
 
-from helpers import record, write_record
+from helpers import record, reservation, write_record
 
 
 class RecordTests(unittest.TestCase):
@@ -41,7 +41,7 @@ class RecordTests(unittest.TestCase):
         del data["sha256"]
         errors = self.errors(data)
         self.assertTrue(any("missing field(s): sha256" in e for e in errors))
-        self.assertTrue(any("unexpected field(s): extra" in e for e in errors))
+        self.assertTrue(any("unexpected field(s) for a release: extra" in e for e in errors))
 
     def test_duplicate_key(self):
         path = self.apps / "PPSA01234.json"
@@ -83,6 +83,25 @@ class RecordTests(unittest.TestCase):
         self.assertRejected(record(artifact_url=VALID_ARTIFACT.replace(".zip", ".tar.gz")), "artifact_url")
         self.assertRejected(record(icon_url="https://example.com/icon.gif"), "icon_url")
         self.assertRejected(record(icon_url="https://user:pw@example.com/icon.png"), "icon_url")
+
+    def test_reservation(self):
+        self.assertEqual(self.errors(reservation(), "PPSA05555.json"), [])
+        self.assertEqual(self.errors(reservation(icon_url="https://example.com/icon.png"), "PPSA05555.json"), [])
+        self.assertRejected(reservation(status="soon"), 'status must be "coming-soon"', "PPSA05555.json")
+        self.assertRejected(reservation(sha256="a" * 64), "unexpected field(s) for a reservation: sha256",
+                            "PPSA05555.json")
+        data = reservation()
+        del data["source_repo"]
+        self.assertRejected(data, "reservation is missing field(s): source_repo", "PPSA05555.json")
+
+    def test_reservation_limit_per_owner(self):
+        for number in range(6):
+            titleid = f"PPSA0555{number}"
+            write_record(self.apps, reservation(titleid=titleid, name=f"Game {number}"))
+        report = Report()
+        records = load_catalog(self.apps, report)
+        self.assertEqual(len(records), 6)
+        self.assertEqual(sum("reservations" in m for _, _, m in report.items), 1)
 
     def test_catalog_uniqueness_and_stray_files(self):
         write_record(self.apps, record())

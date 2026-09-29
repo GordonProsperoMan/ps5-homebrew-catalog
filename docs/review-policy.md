@@ -41,6 +41,20 @@ don't meet this policy.
   by another developer, maintainers resolve the dispute case by case and may ask
   the newer app to change its ID.
 
+## Reservations
+
+A reservation (`"status": "coming-soon"`) holds a title ID for an unreleased
+app and shows it as coming soon.
+
+- Only the owner of the reservation's `source_repo` can create it, update it,
+  or turn it into a release (automated).
+- Each publisher can hold up to 5 reservations (automated).
+- A reservation that hasn't changed for 180 days is flagged by the weekly
+  health check. Maintainers ask the owner in an issue and release the title ID
+  if there's no reply within 14 days.
+- Reservations get the same honesty and scope review as listings: no
+  impersonation, no squatting on other projects' names or IDs.
+
 ## Updates
 
 Updates follow the same checks and ownership rule as new listings. Maintainers

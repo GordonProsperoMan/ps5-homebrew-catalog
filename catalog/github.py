@@ -52,6 +52,11 @@ class GitHub:
     def releases(self, owner: str, name: str) -> list[dict]:
         return self._get(f"/repos/{quote(owner)}/{quote(name)}/releases?per_page=20") or []
 
+    def account_type(self, login: str) -> str | None:
+        """'User' or 'Organization', or None when the account doesn't exist."""
+        account = self._get(f"/users/{quote(login)}")
+        return account.get("type") if account else None
+
     def is_public_member(self, org: str, user: str) -> bool:
         """True when user publicly belongs to org (GitHub answers 204 or 404)."""
         return self._get(f"/orgs/{quote(org)}/public_members/{quote(user)}") is not None

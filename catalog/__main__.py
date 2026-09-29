@@ -63,11 +63,21 @@ def cmd_verify(args) -> int:
 
 
 def cmd_health(args) -> int:
+    from datetime import datetime, timedelta, timezone
+    from .records import RESERVATION_STALE_DAYS
+    from .site import last_updated
+
     report = Report()
     records = load_catalog(APPS, report)
     github = GitHub()
+    updated = last_updated(APPS)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=RESERVATION_STALE_DAYS)
     for record in records:
         verify_record(record, github, report)
+        changed = updated.get(record.path.name)
+        if record.reserved and changed and datetime.fromisoformat(changed) < cutoff:
+            report.warning(f"apps/{record.path.name}", f"reservation unchanged for over "
+                           f"{RESERVATION_STALE_DAYS} days (last update {changed[:10]}); it may be released")
         try:
             tag = newer_release(record, github)
         except GitHubError as error:

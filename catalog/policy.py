@@ -64,9 +64,7 @@ def check_publisher(author: str, maintainer: bool, old: Record | None, new: Reco
     if author.casefold() == new.owner.casefold():
         return
     try:
-        repo = github.repo(new.owner, new.repo)
-        is_org = bool(repo) and repo.get("owner", {}).get("type") == "Organization"
-        if is_org and github.is_public_member(new.owner, author):
+        if github.account_type(new.owner) == "Organization" and github.is_public_member(new.owner, author):
             return
     except GitHubError as error:
         report.error(name, f"could not confirm the publisher: {error}")

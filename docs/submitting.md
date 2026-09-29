@@ -96,6 +96,39 @@ When it passes, a maintainer reviews the listing against the
 [review policy](review-policy.md) and merges it. The website updates after the
 merge.
 
+## Reserving a title ID
+
+Working on something that isn't released yet? Reserve its title ID so nobody
+else takes it. The website shows it as **Coming soon**, with no download.
+
+Add `apps/<TITLEID>.json` with `"status": "coming-soon"` and these fields:
+
+```json
+{
+  "titleid": "PPSA01234",
+  "status": "coming-soon",
+  "name": "Example Game",
+  "kind": "game",
+  "description": "One short sentence about the game.",
+  "author": "Example Dev",
+  "source_repo": "https://github.com/example/example-game"
+}
+```
+
+- `icon_url` is optional. Without it, the card uses a placeholder.
+- `source_repo` may still be private; it names the account that owns the
+  reservation. Only that account, or a public member of that organization, can
+  open the pull request, and only it can later release the app.
+- Each publisher can hold up to 5 reservations at a time.
+- Keep the reservation alive by updating it at least every 180 days. Stale
+  reservations are flagged by the weekly health check and may be released; see
+  the [review policy](review-policy.md#reservations).
+
+**To release it,** replace the file's contents with a full release record
+(the eleven fields in [Metadata format](metadata.md), without `status`) in a
+new pull request from the same account. The card becomes downloadable after
+the merge.
+
 ## Updating your app
 
 Publish a new release, then open a pull request that edits your record's
@@ -118,3 +151,5 @@ your repository.
 | `name duplicates` | Another app already uses that name; choose a distinct one. |
 | `canonical URL` | Match the repository's exact owner/name capitalization. |
 | `may change only apps/` | Remove changes to other files from the PR. |
+| `unexpected field(s) for a reservation` | A reservation has only the seven fields above (plus optional `icon_url`). |
+| `already holds 5 reservations` | Release or remove one of your reservations first. |

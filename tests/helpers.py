@@ -18,6 +18,23 @@ VALID = {
 }
 
 
+RESERVATION = {
+    "titleid": "PPSA05555",
+    "status": "coming-soon",
+    "name": "Future Game",
+    "kind": "game",
+    "description": "A game that is not released yet.",
+    "author": "Example Dev",
+    "source_repo": "https://github.com/example/future-game",
+}
+
+
+def reservation(**changes):
+    data = dict(RESERVATION)
+    data.update(changes)
+    return data
+
+
 def record(**changes):
     data = dict(VALID)
     data.update(changes)

@@ -18,6 +18,21 @@ field may be empty or missing, and no other fields are allowed.
 | `sha256` | 64 | SHA-256 of the artifact as 64 lowercase hex characters. Unique across the catalog. |
 | `icon_url` | 500 | Direct HTTPS link ending in `.png`, `.jpg`, `.jpeg` or `.webp`, returning that image type, at most 2 MiB. Square, 256×256 or larger recommended. Pin to a tag or commit. |
 
+## Reservations (coming soon)
+
+A title ID can be reserved before its first release with a shorter record:
+
+| Field | Rules |
+| --- | --- |
+| `titleid`, `name`, `kind`, `description`, `author` | Same rules as above. |
+| `status` | Exactly `coming-soon`. Its presence marks the record as a reservation. |
+| `source_repo` | Same format as above. The repository may still be private. |
+| `icon_url` | Optional; same rules as above. |
+
+No other fields are allowed. The same name uniqueness applies, and each
+repository owner can hold at most 5 reservations. See
+[Reserving a title ID](submitting.md#reserving-a-title-id).
+
 ## Text rules
 
 All values must be NFC-normalized Unicode without leading or trailing
