@@ -1,0 +1,34 @@
+name: Submission check
+
+# Runs the base branch's trusted checker against a pull request. The PR's files
+# are read only as data (git show); PR code is never checked out or executed, so
+# a submission cannot change the rules it is judged by.
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: submission-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  submission:
+    name: Validate submission
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+      - name: Check records, publisher, release, sha256, package and icon
+        run: python3 -m catalog pr
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
