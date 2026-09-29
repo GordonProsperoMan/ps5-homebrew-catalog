@@ -15,9 +15,11 @@ style.css. Templates use
 string.Template placeholders; every metadata value is HTML-escaped before it is
 substituted.
 
-Icons are fetched once per build and re-served from the site, resized to WebP
-when Pillow is installed. A failed icon falls back to a placeholder instead of
-failing the build.
+Icons are fetched and re-served from the site, resized to WebP when Pillow is
+installed. With an icon cache directory, each icon URL is fetched only once
+across builds (icon URLs are pinned to a tag or commit); entries no longer used
+are pruned. A failed icon falls back to a placeholder instead of failing the
+build.
 """
 
 from __future__ import annotations
@@ -164,6 +166,22 @@ def process_icon(data: bytes) -> tuple[bytes, str]:
     return output.getvalue(), "webp"
 
 
+def _icon(url: str, cache: Path | None) -> tuple[bytes, str]:
+    """Processed icon for url, using and filling the optional cache of original bytes."""
+    entry = cache / (hashlib.sha256(url.encode()).hexdigest() + ".img") if cache else None
+    if entry and entry.is_file():
+        try:
+            return process_icon(entry.read_bytes())
+        except (OSError, ValueError):
+            entry.unlink(missing_ok=True)
+    data = artifacts.fetch_small(url, artifacts.MAX_ICON_BYTES)
+    result = process_icon(data)
+    if entry:
+        cache.mkdir(parents=True, exist_ok=True)
+        entry.write_bytes(data)
+    return result
+
+
 def _prepare_output(out: Path) -> None:
     if out.exists():
         if not (out / MARKER).exists() and any(out.iterdir()):
@@ -194,7 +212,7 @@ def _install_steps(record: Record) -> str:
 
 def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BASE,
                site_url: str = DEFAULT_SITE_URL, fetch_icons: bool = True,
-               theme: str = DEFAULT_THEME) -> int:
+               theme: str = DEFAULT_THEME, icon_cache: Path | None = None) -> int:
     theme_obj = Theme(theme)
     records = load_catalog(apps_dir, report)
     if report.failed:
@@ -220,11 +238,17 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
         if not fetch_icons or record.data["icon_url"] is None:
             continue
         try:
-            content, extension = process_icon(artifacts.fetch_small(record.data["icon_url"], artifacts.MAX_ICON_BYTES))
+            content, extension = _icon(record.data["icon_url"], icon_cache)
         except (artifacts.DownloadError, OSError, ValueError) as error:
             report.warning(f"apps/{record.path.name}", f"icon not included, using a placeholder: {error}")
             continue
         icons[record.titleid] = assets.add(f"icon-{record.titleid}", extension, content)
+    if icon_cache and icon_cache.is_dir() and fetch_icons:
+        wanted = {hashlib.sha256(r.data["icon_url"].encode()).hexdigest() + ".img"
+                  for r in records if r.data["icon_url"]}
+        for entry in icon_cache.glob("*.img"):
+            if entry.name not in wanted:
+                entry.unlink()
 
     kinds = {kind: [r for r in records if r.data["kind"] == kind] for kind in KINDS}
     total = len(records)

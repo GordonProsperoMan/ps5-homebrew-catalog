@@ -15,6 +15,8 @@ A listed artifact is a single release asset in one of these formats:
 
 Only that the file at `artifact_url` is byte-for-byte the file the record's
 `sha256` describes, and that it is at most 2 GiB (GitHub's asset limit). The
+check uses the SHA-256 digest GitHub computes for every release asset, so the
+catalog never downloads artifacts. The
 catalog doesn't open, inspect or run artifacts, so it doesn't vouch for their
 contents or that they work; that responsibility stays with the developer and
 the maintainer review.

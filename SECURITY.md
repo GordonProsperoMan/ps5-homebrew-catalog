@@ -18,7 +18,8 @@ bypass the submission check, should be reported the same way.
 
 ## Scope
 
-The catalog verifies that downloads match the reviewed release byte for byte.
+The catalog verifies, through the SHA-256 digest GitHub records for each release
+asset, that downloads match the reviewed release byte for byte.
 It does not audit app source code, and it can't vouch for an app's behavior on
 the console. Vulnerabilities in a listed app itself belong in that app's own
 repository.

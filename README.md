@@ -99,14 +99,14 @@ empty. The website shows it as **Coming soon**, with no download.
    release the reservation, and releasing also requires owning `source_repo`.
 
 Limits that keep reservations fair: at most **5 per GitHub account**, and a
-reservation left unchanged for **180 days** is flagged by the weekly health
+reservation left unchanged for **180 days** is flagged by the health
 check and may be released. Details are in
 [Reserving a title ID](docs/submitting.md#reserving-a-title-id) and the
 [review policy](docs/review-policy.md#reservations).
 
 ## What gets checked
 
-| Check | Pull request | Push to `main` | Weekly |
+| Check | Pull request | Push to `main` | Weekly (daily rotation) |
 | --- | :---: | :---: | :---: |
 | JSON format, fields, text, URLs, uniqueness | ✓ | ✓ | ✓ |
 | Only `apps/<TITLEID>.json` changed, one app per PR | ✓ | | |
@@ -114,12 +114,13 @@ check and may be released. Details are in
 | Reservations: only the reserving account may change them, 5 per account | ✓ | | |
 | Reservations unchanged for 180 days (report only) | | | ✓ |
 | Release, asset and license exist and match | ✓ | ✓ | ✓ |
-| Downloaded bytes match `sha256` | ✓ | ✓ | ✓ |
+| GitHub's digest of the asset matches `sha256` (nothing downloaded) | ✓ | ✓ | ✓ |
 | Icon is a reachable PNG, JPEG or WebP image | ✓ | ✓ | ✓ |
 | Newer upstream release available (report only) | | | ✓ |
 
-Pushes to `main` verify only the records they change; the weekly run verifies all
-of them. Artifacts are downloaded only to hash them; they are never opened or executed. See
+Pushes to `main` verify only the records they change; the daily health check
+covers the whole catalog once a week. Artifacts are never downloaded: the
+sha256 is checked against the digest GitHub computes for each release asset. See
 **[Automation](docs/automation.md)** for how the checks work and why they are safe
 to run on untrusted pull requests.
 
@@ -153,7 +154,7 @@ catalog/              Checker, verifier and site generator (Python standard libr
 site/                 Website themes, templates and shared assets
 tests/                Unit and end-to-end tests for the checker
 docs/                 Submission guide, formats, policy, automation, website
-.github/workflows/    Submission check, CI, weekly health check
+.github/workflows/    Submission check, CI and deploy, daily health check
 ```
 
 ## Run the checks locally

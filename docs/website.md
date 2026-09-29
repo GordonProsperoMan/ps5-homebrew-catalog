@@ -36,9 +36,12 @@ dist/
 - **Coming soon.** Title ID reservations appear as dimmed cards with a "Coming
   soon" badge and no download; see [Reserving a title ID](submitting.md#reserving-a-title-id).
 - Every metadata value is HTML-escaped; descriptions render as plain text.
-- Icons are fetched once per build from `icon_url`, resized to 512 px WebP (when
-  Pillow is installed) and served from the site, so visitors never hit the
-  original host. A broken icon becomes a placeholder with a build warning.
+- Icons are fetched from `icon_url`, resized to 512 px WebP (when Pillow is
+  installed) and served from the site, so visitors never hit the original host.
+  The deploy job keeps them in a CI cache, so each icon URL is fetched only once
+  across deploys. A broken icon becomes a placeholder with a build warning.
+- Filtering waits for a pause in typing and only updates the view on screen;
+  at 1,000 apps a filter change takes a few milliseconds.
 - Pages work without JavaScript; the script adds search, filters, sorting,
   copy buttons and card effects.
 - The build fails, and Cloudflare keeps the previous deployment, if any record

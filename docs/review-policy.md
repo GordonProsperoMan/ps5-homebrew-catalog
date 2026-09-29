@@ -51,7 +51,7 @@ A reservation (a record whose `artifact_url`, `source_repo` and `icon_url` are
   handle transfers.
 - Each account can hold up to 5 reservations (automated).
 - Releasing it also requires owning the new `source_repo` (automated).
-- A reservation that hasn't changed for 180 days is flagged by the weekly
+- A reservation that hasn't changed for 180 days is flagged by the
   health check. Maintainers ask the holder in an issue and release the title ID
   if there's no reply within 14 days.
 - Reservations get the same honesty and scope review as listings: no
@@ -65,7 +65,8 @@ repository, publisher or purpose is treated like a new submission.
 
 ## Broken and stale listings
 
-The weekly health check re-verifies every listing.
+The daily health check re-verifies every listing once a week, one seventh of
+the catalog per day.
 
 - **Missing release, asset or icon, or a changed sha256:** maintainers contact
   the owner through an issue. If a replacement or explanation doesn't arrive

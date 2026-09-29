@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import shutil
@@ -58,8 +59,16 @@ def cmd_verify(args) -> int:
     selected = [r for r in records if not wanted or r.titleid in wanted]
     github = GitHub()
     for record in selected:
-        verify_record(record, github, report, download=not args.no_download)
+        verify_record(record, github, report)
     return report.emit("Catalog verification", f"{len(selected)} record(s) verified.")
+
+
+HEALTH_SLICES = 7
+
+
+def health_slice(titleid: str) -> int:
+    """Stable day-of-week bucket (0 = Monday) for a record in the daily health rotation."""
+    return int(hashlib.sha256(titleid.encode()).hexdigest(), 16) % HEALTH_SLICES
 
 
 def cmd_health(args) -> int:
@@ -69,15 +78,24 @@ def cmd_health(args) -> int:
 
     report = Report()
     records = load_catalog(APPS, report)
+    now = datetime.now(timezone.utc)
+    if args.slice == "all":
+        selected = records
+    else:
+        day = now.weekday() if args.slice == "today" else int(args.slice)
+        selected = [r for r in records if health_slice(r.titleid) == day]
+        report.notice("catalog", f"checking slice {day} of {HEALTH_SLICES}: {len(selected)} of "
+                                 f"{len(records)} records (every record is checked once a week)")
     github = GitHub()
     updated = last_updated(APPS)
-    cutoff = datetime.now(timezone.utc) - timedelta(days=RESERVATION_STALE_DAYS)
+    cutoff = now - timedelta(days=RESERVATION_STALE_DAYS)
     for record in records:
-        verify_record(record, github, report)
         changed = updated.get(record.path.name)
         if record.reserved and changed and datetime.fromisoformat(changed) < cutoff:
             report.warning(f"apps/{record.path.name}", f"reservation unchanged for over "
                            f"{RESERVATION_STALE_DAYS} days (last update {changed[:10]}); it may be released")
+    for record in selected:
+        verify_record(record, github, report)
         try:
             tag = newer_release(record, github)
         except GitHubError as error:
@@ -85,7 +103,7 @@ def cmd_health(args) -> int:
             continue
         if tag:
             report.notice(f"apps/{record.path.name}", f"a newer release is published: {tag}")
-    return report.emit("Catalog health", f"All {len(records)} listed downloads are intact.")
+    return report.emit("Catalog health", f"{len(selected)} checked record(s) are intact.")
 
 
 def cmd_push(args) -> int:
@@ -177,7 +195,8 @@ def cmd_build(args) -> int:
     from .site import build_site
     report = Report()
     count = build_site(Path(args.out), APPS, report, base=args.base, site_url=args.site_url,
-                       fetch_icons=not args.no_icons, theme=args.theme)
+                       fetch_icons=not args.no_icons, theme=args.theme,
+                       icon_cache=Path(args.icon_cache) if args.icon_cache else None)
     return report.emit("Site build", f"Built {count} app page(s) into {args.out}.")
 
 
@@ -218,7 +237,6 @@ def main(argv: list[str] | None = None) -> int:
 
     verify = commands.add_parser("verify", help="check records against GitHub and their downloads")
     verify.add_argument("titleids", nargs="*", help="title IDs to verify (default: all)")
-    verify.add_argument("--no-download", action="store_true", help="skip downloading artifacts to check sha256")
     verify.set_defaults(func=cmd_verify)
 
     digest = commands.add_parser("digest", help="print the sha256 of a GitHub release asset URL")
@@ -232,6 +250,7 @@ def main(argv: list[str] | None = None) -> int:
     build.add_argument("--site-url", default=DEFAULT_SITE_URL, help="origin used for absolute URLs")
     build.add_argument("--theme", default=DEFAULT_THEME, choices=sorted(THEMES))
     build.add_argument("--no-icons", action="store_true", help="skip fetching icons (placeholders)")
+    build.add_argument("--icon-cache", help="directory that keeps fetched icons between builds")
     build.set_defaults(func=cmd_build)
 
     pr = commands.add_parser("pr", help="CI: validate the pull request in GITHUB_EVENT_PATH")
@@ -242,7 +261,9 @@ def main(argv: list[str] | None = None) -> int:
     push.add_argument("--after", default="HEAD")
     push.set_defaults(func=cmd_push)
 
-    health = commands.add_parser("health", help="CI: re-verify every listed download")
+    health = commands.add_parser("health", help="CI: re-verify listed releases (daily slice or all)")
+    health.add_argument("--slice", default="all", choices=["all", "today"] + [str(n) for n in range(HEALTH_SLICES)],
+                        help="all records, today's weekday slice, or slice 0-6")
     health.set_defaults(func=cmd_health)
 
     args = parser.parse_args(argv)

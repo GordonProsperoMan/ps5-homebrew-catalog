@@ -1,4 +1,9 @@
-"""Verify a record against GitHub and the bytes it points to."""
+"""Verify a record against GitHub without downloading its artifact.
+
+GitHub computes a SHA-256 digest for every release asset and reports it in the
+API. Matching it against the record's sha256 ties the reviewed listing to the
+exact bytes; a replaced asset gets a new digest and stops matching.
+"""
 
 from __future__ import annotations
 
@@ -8,7 +13,7 @@ from .records import Record
 from .report import Report
 
 
-def verify_record(record: Record, github: GitHub, report: Report, download: bool = True) -> None:
+def verify_record(record: Record, github: GitHub, report: Report) -> None:
     name = f"apps/{record.path.name}"
     data = record.data
     if record.reserved:
@@ -39,15 +44,18 @@ def verify_record(record: Record, github: GitHub, report: Report, download: bool
             report.error(name, f"artifact is {asset['size']} bytes; the limit is {artifacts.MAX_ARTIFACT_BYTES}")
             return
         github_digest = asset.get("digest")
-        if github_digest and github_digest != f"sha256:{data['sha256']}":
+        if not github_digest:
+            report.error(name, "GitHub reports no digest for this asset; upload it to a new release "
+                               "so GitHub computes one")
+            return
+        if github_digest != f"sha256:{data['sha256']}":
             report.error(name, f"sha256 does not match the release asset; GitHub reports {github_digest}")
             return
+        report.notice(name, f"release asset matches sha256 ({asset.get('size', 0):,} bytes, not downloaded)")
     except GitHubError as error:
         report.error(name, str(error))
         return
 
-    if download:
-        _verify_artifact(name, record, report)
     _verify_icon(name, data["icon_url"], report)
 
 
@@ -62,18 +70,6 @@ def _check_license(name: str, license_value: str, repo: dict, report: Report) ->
         report.warning(name, "GitHub could not detect the repository license; confirm it manually")
     elif not any(token == detected or token.startswith(detected + "-") for token in license_value.split()):
         report.error(name, f"license {license_value!r} does not match the repository license {detected!r}")
-
-
-def _verify_artifact(name: str, record: Record, report: Report) -> None:
-    try:
-        size, digest = artifacts.hash_download(record.data["artifact_url"])
-    except (artifacts.DownloadError, OSError) as error:
-        report.error(name, f"artifact download failed: {error}")
-        return
-    if digest != record.data["sha256"]:
-        report.error(name, f"downloaded artifact has sha256 {digest}, not the recorded value")
-        return
-    report.notice(name, f"artifact matches sha256 ({size:,} bytes)")
 
 
 def _verify_icon(name: str, url: str, report: Report) -> None:

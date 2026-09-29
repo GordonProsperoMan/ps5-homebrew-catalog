@@ -67,8 +67,8 @@
   // ── Catalog: search, filters, sorting and view, shared by both views ──
 
   function setupStore(scope) {
-    var grids = Array.prototype.slice.call(scope.querySelectorAll("[data-grid]"));
-    if (!grids.length) return null;
+    var gridElements = Array.prototype.slice.call(scope.querySelectorAll("[data-grid]"));
+    if (!gridElements.length) return null;
     var input = scope.querySelector("[data-search]");
     var chips = Array.prototype.slice.call(scope.querySelectorAll("[data-kind]"));
     var statusSelect = scope.querySelector("[data-status-filter]");
@@ -79,27 +79,47 @@
     var counts = Array.prototype.slice.call(scope.querySelectorAll("[data-count]"));
     var empty = scope.querySelector("[data-empty]");
     var kind = "all";
+    var searchTimer = null;
+
+    function normalize(text) {
+      return (text || "").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    // Read every item's attributes once; filtering then only compares strings.
+    var grids = gridElements.map(function (element) {
+      return {
+        element: element,
+        panel: element.getAttribute("data-view-panel"),
+        sortedBy: "name",      // the build emits items sorted by name
+        filteredBy: null,
+        shown: 0,
+        items: Array.prototype.map.call(element.querySelectorAll("[data-app]"), function (el) {
+          return {
+            el: el,
+            text: normalize(el.getAttribute("data-search-text")),
+            kind: el.getAttribute("data-app-kind"),
+            status: el.getAttribute("data-status"),
+            format: el.getAttribute("data-format"),
+            name: el.getAttribute("data-name") || "",
+            titleid: el.getAttribute("data-titleid") || "",
+            updated: el.getAttribute("data-updated") || ""
+          };
+        })
+      };
+    });
+
+    var sorters = {
+      name: function (a, b) { return a.name.localeCompare(b.name); },
+      titleid: function (a, b) { return a.titleid.localeCompare(b.titleid); },
+      kind: function (a, b) { return a.kind.localeCompare(b.kind) || sorters.name(a, b); },
+      updated: function (a, b) { return b.updated.localeCompare(a.updated) || sorters.name(a, b); }
+    };
 
     function pick(select, value) {
       if (!select) return;
       var allowed = Array.prototype.some.call(select.options, function (o) { return o.value === value; });
       select.value = allowed ? value : select.options[0].value;
     }
-
-    function normalize(text) {
-      return (text || "").toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "");
-    }
-
-    var sorters = {
-      name: function (a, b) { return a.getAttribute("data-name").localeCompare(b.getAttribute("data-name")); },
-      titleid: function (a, b) { return a.getAttribute("data-titleid").localeCompare(b.getAttribute("data-titleid")); },
-      kind: function (a, b) {
-        return a.getAttribute("data-app-kind").localeCompare(b.getAttribute("data-app-kind")) || sorters.name(a, b);
-      },
-      updated: function (a, b) {
-        return (b.getAttribute("data-updated") || "").localeCompare(a.getAttribute("data-updated") || "") || sorters.name(a, b);
-      }
-    };
 
     function view() {
       return root.getAttribute("data-view") === "list" ? "list" : "cards";
@@ -116,30 +136,52 @@
       return next.toString();
     }
 
-    function apply(updateUrl) {
-      var terms = normalize(input ? input.value : "").split(/\s+/).filter(Boolean);
-      var status = statusSelect ? statusSelect.value : "all";
-      var format = formatSelect ? formatSelect.value : "all";
-      var sorter = sorters[sortSelect ? sortSelect.value : "name"] || sorters.name;
-      var shown = 0;
-      grids.forEach(function (grid, index) {
-        var items = Array.prototype.slice.call(grid.querySelectorAll("[data-app]"));
-        items.sort(sorter).forEach(function (item) {
-          grid.appendChild(item);
-          var text = normalize(item.getAttribute("data-search-text"));
-          var visible = (kind === "all" || item.getAttribute("data-app-kind") === kind) &&
-            (status === "all" || item.getAttribute("data-status") === status) &&
-            (format === "all" || item.getAttribute("data-format") === format) &&
-            terms.every(function (term) { return text.indexOf(term) !== -1; });
-          item.hidden = !visible;
-          if (visible && index === 0) shown += 1;
+    // Bring one grid up to date. Work happens only when the sort or filters
+    // changed since that grid was last updated, so the hidden view costs nothing
+    // until it is shown.
+    function refresh(grid, sortKey, filters) {
+      if (grid.sortedBy !== sortKey) {
+        var fragment = document.createDocumentFragment();
+        grid.items.sort(sorters[sortKey] || sorters.name).forEach(function (item) { fragment.appendChild(item.el); });
+        grid.element.appendChild(fragment);
+        grid.sortedBy = sortKey;
+      }
+      if (grid.filteredBy !== filters.key) {
+        var shown = 0;
+        grid.items.forEach(function (item) {
+          var visible = (filters.kind === "all" || item.kind === filters.kind) &&
+            (filters.status === "all" || item.status === filters.status) &&
+            (filters.format === "all" || item.format === filters.format) &&
+            filters.terms.every(function (term) { return item.text.indexOf(term) !== -1; });
+          if (item.el.hidden === visible) item.el.hidden = !visible;
+          if (visible) shown += 1;
         });
+        grid.shown = shown;
+        grid.filteredBy = filters.key;
+      }
+    }
+
+    function apply(updateUrl) {
+      var filters = {
+        terms: normalize(input ? input.value : "").split(/\s+/).filter(Boolean),
+        kind: kind,
+        status: statusSelect ? statusSelect.value : "all",
+        format: formatSelect ? formatSelect.value : "all"
+      };
+      filters.key = [filters.terms.join(" "), filters.kind, filters.status, filters.format].join("|");
+      var sortKey = sortSelect ? sortSelect.value : "name";
+      var current = view();
+      var shown = 0;
+      grids.forEach(function (grid) {
+        if (grid.panel && grid.panel !== current) return;
+        refresh(grid, sortKey, filters);
+        shown = grid.shown;
       });
       chips.forEach(function (chip) {
         chip.setAttribute("aria-pressed", String(chip.getAttribute("data-kind") === kind));
       });
       viewButtons.forEach(function (button) {
-        button.setAttribute("aria-pressed", String(button.getAttribute("data-view-button") === view()));
+        button.setAttribute("aria-pressed", String(button.getAttribute("data-view-button") === current));
       });
       counts.forEach(function (count) {
         var template = count.getAttribute("data-count") || "{n}";
@@ -171,29 +213,41 @@
       apply(updateUrl);
     }
 
-    if (input) input.addEventListener("input", function () { apply(true); });
+    function applyNow() {
+      window.clearTimeout(searchTimer);
+      apply(true);
+    }
+
+    // Typing waits for a short pause so a burst of keystrokes filters once.
+    if (input) input.addEventListener("input", function () {
+      window.clearTimeout(searchTimer);
+      searchTimer = window.setTimeout(function () { apply(true); }, 150);
+    });
     [statusSelect, formatSelect, sortSelect].forEach(function (select) {
-      if (select) select.addEventListener("change", function () { apply(true); });
+      if (select) select.addEventListener("change", applyNow);
     });
     chips.forEach(function (chip) {
       chip.addEventListener("click", function () {
         kind = chip.getAttribute("data-kind");
-        apply(true);
+        applyNow();
       });
     });
     viewButtons.forEach(function (button) {
-      button.addEventListener("click", function () { setView(button.getAttribute("data-view-button"), true); });
+      button.addEventListener("click", function () {
+        window.clearTimeout(searchTimer);
+        setView(button.getAttribute("data-view-button"), true);
+      });
     });
     if (reset) reset.addEventListener("click", function () {
       kind = "all";
       if (input) input.value = "";
       pick(statusSelect, "all");
       pick(formatSelect, "all");
-      apply(true);
+      applyNow();
     });
 
     load(window.location.search);
-    return { input: input, apply: apply, load: load };
+    return { input: input, apply: applyNow, load: load };
   }
 
   function onKeyDown(event) {

@@ -84,7 +84,8 @@ python3 -m catalog check              # format only, no network
 python3 -m catalog verify PPSA01234   # the same online checks CI runs
 ```
 
-`verify` downloads your artifact (at most 2 GiB) only to hash it.
+`verify` compares `sha256` with the digest GitHub reports for your release
+asset; it doesn't download the file.
 
 ## 6. Open the pull request
 
@@ -125,7 +126,7 @@ A reservation is a normal record with its links left empty: `source_repo`,
   that adds it. Only that account can later update it or release the app.
 - Each account can hold up to 5 reservations at a time.
 - Keep the reservation alive by updating it at least every 180 days. Stale
-  reservations are flagged by the weekly health check and may be released; see
+  reservations are flagged by the health check and may be released; see
   the [review policy](review-policy.md#reservations).
 
 **To release it,** fill in every field (see [Metadata format](metadata.md)) in a

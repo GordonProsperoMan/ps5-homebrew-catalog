@@ -7,7 +7,7 @@ library and run by three workflows.
 | --- | --- | --- |
 | [Submission check](../.github/workflows/pull-request.yml) | Pull requests (`pull_request_target`) | `python3 -m catalog pr` |
 | [CI](../.github/workflows/ci.yml) | Pull requests and pushes to `main` | Tests, `catalog check` and a website build; on `main` also `catalog push`, then the [website deployment](website.md#deployment) |
-| [Catalog health](../.github/workflows/health.yml) | Mondays 06:17 UTC and manual | `catalog health` |
+| [Catalog health](../.github/workflows/health.yml) | Daily 06:17 UTC and manual | `catalog health --slice today` |
 
 Results appear as annotations and in each run's job summary.
 
@@ -27,11 +27,12 @@ For a pull request the checker:
    moved to a different repository owner by a community PR.
 4. **Verifies the release.** Through the GitHub API: the repository is public
    and the URL is canonical, the license agrees with GitHub's detection, the tag
-   is a published release, the asset exists and is at most 2 GiB, and GitHub's
-   own asset digest equals `sha256`.
-5. **Verifies the bytes.** It streams the artifact, hashes
-   it without storing it, and requires the hash to equal `sha256`. Artifacts
-   are never opened, extracted or executed (see [artifact formats](artifact-formats.md)).
+   is a published release, and the asset exists and is at most 2 GiB.
+5. **Verifies the bytes without downloading them.** GitHub computes a SHA-256
+   digest for every release asset and reports it in the API. The check requires
+   it to equal `sha256`. If the asset is ever replaced, GitHub's digest changes
+   and the listing stops matching. Artifacts are never downloaded, opened or
+   executed (see [artifact formats](artifact-formats.md)).
 6. **Checks the icon.** It fetches at most 2 MiB and requires PNG, JPEG or WebP
    content, warning when a PNG isn't square or is under 256×256.
 
@@ -42,8 +43,7 @@ workflow and checker, never the pull request's. It checks out `main`, fetches th
 PR head as a git ref, and reads the changed records with `git show` as plain
 data. PR code is never checked out or executed, so a submission can't alter the
 rules it is judged by. The token is read-only, no secrets are used, artifacts
-are never opened or executed, and every download
-is size-bounded. Actions are pinned to commit SHAs and kept current by
+are never downloaded, and the only file fetched (the icon) is size-bounded. Actions are pinned to commit SHAs and kept current by
 Dependabot.
 
 The CI workflow does run PR code (tests), with the standard read-only
@@ -55,11 +55,15 @@ Every push runs the tests and the offline check, then fully verifies the records
 changed since the previous commit. This covers maintainer commits that don't go
 through a pull request.
 
-## Weekly health check
+## Daily health check
 
-Re-verifies every record end to end (release, digest, download, icon)
-and reports projects that have published a newer release than the one listed.
-It also warns about reservations that haven't changed in 180 days.
+Every day it re-verifies one seventh of the catalog (release still published,
+GitHub's digest still equal to `sha256`, icon reachable), so each record is
+checked once a week. A record's day is fixed by a hash of its title ID. Nothing
+is downloaded, and at 1,000 apps a day's run makes about 430 GitHub API calls,
+well within CI's limits. It also reports projects that have published a newer
+release than the one listed, and warns about reservations that haven't changed
+in 180 days. Run it manually with **slice: all** to check everything at once.
 
 A reservation has no repository, file or icon to verify. For those, the
 submission check confirms who may change them instead: it looks up the commit
@@ -90,9 +94,8 @@ push workflow.
 ```sh
 python3 -m catalog check                   # offline format check of apps/
 python3 -m catalog verify [TITLEID ...]    # online checks for some or all records
-python3 -m catalog verify --no-download    # skip downloading artifacts
 python3 -m catalog digest <artifact_url>   # sha256 as reported by GitHub
-python3 -m catalog health                  # what the weekly job runs
+python3 -m catalog health [--slice today]  # what the daily job runs (default: all)
 python3 -m unittest discover -s tests
 ```
 

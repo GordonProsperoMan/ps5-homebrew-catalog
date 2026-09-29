@@ -78,7 +78,13 @@ jobs:
         with:
           python-version: '3.13'
       - run: python3 -m pip install --disable-pip-version-check -r requirements.txt
-      - run: python3 -m catalog build --out dist
+      # Icon URLs are pinned, so each one is fetched once and reused by later deploys.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .icon-cache
+          key: icons-${{ hashFiles('apps/*.json') }}
+          restore-keys: icons-
+      - run: python3 -m catalog build --out dist --icon-cache .icon-cache
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22'

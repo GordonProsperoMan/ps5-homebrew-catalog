@@ -122,5 +122,32 @@ class SiteBuildTests(unittest.TestCase):
         self.assertTrue((self.out / "keep.txt").exists())
 
 
+class IconCacheTests(unittest.TestCase):
+    PNG = (b"\x89PNG\r\n\x1a\n\x00\x00\x00\x0dIHDR" + (512).to_bytes(4, "big") * 2)
+
+    def test_icons_are_fetched_once_and_pruned(self):
+        from catalog import site
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            apps, cache = root / "apps", root / "cache"
+            write_record(apps, record())
+            fetches = []
+
+            def fake_fetch(url, limit):
+                fetches.append(url)
+                return self.PNG
+
+            with mock.patch.object(site.artifacts, "fetch_small", fake_fetch), \
+                    mock.patch.object(site, "process_icon", lambda data: (data, "png")):
+                for n in range(2):
+                    site.build_site(root / f"out{n}", apps, Report(), icon_cache=cache)
+                self.assertEqual(len(fetches), 1)
+                self.assertEqual(len(list(cache.glob("*.img"))), 1)
+                write_record(apps, record(icon_url="https://example.com/new.png"))
+                site.build_site(root / "out3", apps, Report(), icon_cache=cache)
+                self.assertEqual(len(fetches), 2)
+                self.assertEqual(len(list(cache.glob("*.img"))), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

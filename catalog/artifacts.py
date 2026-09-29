@@ -1,11 +1,7 @@
-"""Download artifacts and icons with hard limits.
-
-Artifacts are only hashed; nothing downloaded here is opened, extracted or executed.
-"""
+"""Fetch icons with hard limits, and inspect them. Artifacts are never downloaded."""
 
 from __future__ import annotations
 
-import hashlib
 import urllib.error
 import urllib.request
 
@@ -14,7 +10,6 @@ from .github import USER_AGENT
 MAX_ARTIFACT_BYTES = 2 << 30          # GitHub's per-asset limit
 MAX_ICON_BYTES = 2 << 20
 TIMEOUT = 60
-CHUNK = 1 << 20
 
 
 class DownloadError(RuntimeError):
@@ -33,24 +28,6 @@ def _open(url: str):
         response.close()
         raise DownloadError(f"{url} redirected to a non-HTTPS location")
     return response
-
-
-def hash_download(url: str, max_bytes: int = MAX_ARTIFACT_BYTES) -> tuple[int, str]:
-    """Stream url without storing it, returning (byte count, sha256 hex)."""
-    digest = hashlib.sha256()
-    size = 0
-    with _open(url) as response:
-        declared = response.headers.get("Content-Length")
-        if declared and declared.isdigit() and int(declared) > max_bytes:
-            raise DownloadError(f"artifact is {int(declared)} bytes; the limit is {max_bytes}")
-        while chunk := response.read(CHUNK):
-            size += len(chunk)
-            if size > max_bytes:
-                raise DownloadError(f"artifact exceeds the {max_bytes}-byte limit")
-            digest.update(chunk)
-        if declared and declared.isdigit() and int(declared) != size:
-            raise DownloadError(f"download was truncated ({size} of {declared} bytes)")
-    return size, digest.hexdigest()
 
 
 def fetch_small(url: str, max_bytes: int) -> bytes:
