@@ -1,8 +1,8 @@
 # Website
 
 The store at <https://homebrew.page/ps5/> is a static site generated from
-`apps/` by `python3 -m catalog build` and deployed by Cloudflare Pages on every
-push to `main`. There is no server-side code, database or tracking.
+`apps/` by `python3 -m catalog build` and deployed to Cloudflare Pages by GitHub
+Actions on every push to `main`. There is no server-side code, database or tracking.
 
 ## What the build produces
 
@@ -27,7 +27,7 @@ dist/
   type chips scroll sideways.
 - **Updated dates.** Each app shows when its record last changed on `main`,
   taken from the git history of `apps/<TITLEID>.json`. The build deepens a
-  shallow clone first so dates stay correct on Cloudflare and CI.
+  shallow clone first so dates stay correct in CI.
 - **Coming soon.** Title ID reservations appear as dimmed cards with a "Coming
   soon" badge and no download; see [Reserving a title ID](submitting.md#reserving-a-title-id).
 - Every metadata value is HTML-escaped; descriptions render as plain text.
@@ -86,24 +86,59 @@ Open <http://localhost:8000/ps5/>. Useful options: `--no-icons` (offline,
 placeholders), `--base /` (serve at the root), `--site-url` (origin used in the
 feed and canonical links), `--out`.
 
-## Cloudflare Pages setup
+## Deployment
 
-1. In Cloudflare, **Workers & Pages → Create → Pages → Connect to Git** and pick
-   this repository.
-2. Build settings:
-   - Production branch: `main`
-   - Framework preset: None
-   - Build command: `python3 -m catalog build`
-   - Build output directory: `dist`
-   - Environment variable: `PYTHON_VERSION` = `3.13`
-3. Cloudflare installs `requirements.txt` automatically before building.
-4. **Custom domains → Set up a domain →** `homebrew.page`. With the domain's DNS
-   on Cloudflare the certificate and records are created automatically. The
-   site's `_redirects` sends `/` to `/ps5/`.
-5. Optional: under **Settings → Builds → Branch control**, disable preview
-   deployments for pull requests, so untrusted submissions never build on
-   Cloudflare. The trusted submission check already validates every record.
+The **Deploy website to Cloudflare Pages** job in [CI](../.github/workflows/ci.yml)
+builds `dist/` and uploads it with Cloudflare's Direct Upload (`wrangler pages
+deploy`). It runs only on `main`, after the tests and the record verification
+pass, so a broken or unverified catalog is never published. Cloudflare has no
+access to this repository.
 
-Pages rebuilds on every push to `main`, including merged submissions, so a
-merged pull request is live within a minute or two. A failed build leaves the
-last good deployment online.
+### What stays private
+
+- **Nothing about the Cloudflare account is in the repository.** The API token
+  and account ID are GitHub encrypted secrets. They aren't stored in files or
+  history, they're masked in logs, and pull requests and forks can't read them.
+- **The secrets reach only the deploy job.** They're environment secrets of
+  `cloudflare-pages`, and that environment accepts only the `main` branch. The
+  pull request workflows never use it.
+- **Public logs stay clean.** Actions logs of a public repository are
+  world-readable, so the deploy step keeps wrangler's output out of the log and
+  prints only success or failure. Wrangler telemetry is off.
+- **The token can do one thing.** It can edit Cloudflare Pages in one account.
+  It can't read DNS, billing or anything else, and you can revoke it at any time.
+- **The site reveals nothing about the account.** Visitors see `homebrew.page`
+  and the project's `*.pages.dev` name. Keep WHOIS privacy on for the domain;
+  Cloudflare Registrar redacts owner details by default.
+
+### One-time setup
+
+1. **Create the Pages project.** In Cloudflare, go to **Workers & Pages →
+   Create → Pages → Use direct upload**. Name it `homebrew-page` and upload
+   any small placeholder folder; the first CI deployment replaces it. Don't use
+   "Connect to Git": that installs Cloudflare's GitHub app on your account and
+   links the two.
+2. **Create an API token.** Go to **My Profile → API Tokens → Create Token →
+   Custom token**:
+   - Permissions: **Account → Cloudflare Pages → Edit** (nothing else)
+   - Account resources: **Include → your account**
+   - TTL: optional; for example one year, with a reminder to rotate it
+3. **Find the account ID.** It's shown in the Workers & Pages overview sidebar,
+   and in the dashboard URL.
+4. **Add them to GitHub**, not to the repository files. In the repository's
+   **Settings → Environments → New environment**, create `cloudflare-pages`:
+   - **Deployment branches and tags:** Selected branches → `main`
+   - **Environment secrets:** `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
+5. **Switch deployment on.** Under **Settings → Secrets and variables → Actions
+   → Variables**, add the repository variable `CLOUDFLARE_PAGES_PROJECT` =
+   `homebrew-page`. The deploy job is skipped while this variable is missing.
+6. **Deploy.** Go to **Actions → CI → Run workflow** on `main`, or push. Check
+   `https://homebrew-page.pages.dev/ps5/`.
+7. **Connect the domain.** In the Pages project, go to **Custom domains → Set up
+   a domain →** `homebrew.page`. An apex domain needs its DNS on Cloudflare; the
+   certificate and records are then created automatically. The site's
+   `_redirects` sends `/` to `/ps5/`.
+
+After that, every merge to `main` goes live within a couple of minutes. A failed
+build or upload leaves the last good deployment online. To stop deployments,
+delete the variable; to cut access entirely, revoke the token.

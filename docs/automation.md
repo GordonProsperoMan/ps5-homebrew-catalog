@@ -6,7 +6,7 @@ library and run by three workflows.
 | Workflow | Trigger | Runs |
 | --- | --- | --- |
 | [Submission check](../.github/workflows/pull-request.yml) | Pull requests (`pull_request_target`) | `python3 -m catalog pr` |
-| [CI](../.github/workflows/ci.yml) | Pull requests and pushes to `main` | Tests, `catalog check` and a website build; on `main` also `catalog push` |
+| [CI](../.github/workflows/ci.yml) | Pull requests and pushes to `main` | Tests, `catalog check` and a website build; on `main` also `catalog push`, then the [website deployment](website.md#deployment) |
 | [Catalog health](../.github/workflows/health.yml) | Mondays 06:17 UTC and manual | `catalog health` |
 
 Results appear as annotations and in each run's job summary.

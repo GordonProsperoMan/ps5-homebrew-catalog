@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -48,3 +49,54 @@ jobs:
           BEFORE: ${{ github.event.before }}
           AFTER: ${{ github.sha }}
           GITHUB_TOKEN: ${{ github.token }}
+
+  deploy:
+    name: Deploy website to Cloudflare Pages
+    # Only trusted code on main reaches this job: it never runs for pull requests.
+    # It is skipped until the CLOUDFLARE_PAGES_PROJECT repository variable exists.
+    needs: [tests, verify]
+    if: >-
+      always() && github.ref == 'refs/heads/main'
+      && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && needs.tests.result == 'success'
+      && (needs.verify.result == 'success' || needs.verify.result == 'skipped')
+      && vars.CLOUDFLARE_PAGES_PROJECT != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: cloudflare-pages
+      url: https://homebrew.page/ps5/
+    concurrency:
+      group: deploy-cloudflare-pages
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+      - run: python3 -m pip install --disable-pip-version-check -r requirements.txt
+      - run: python3 -m catalog build --out dist
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+      - name: Upload to Cloudflare Pages
+        # This repository's Actions logs are public. Wrangler's output can
+        # mention account details, so it stays out of the log entirely.
+        run: |
+          if npx --yes wrangler@4.143.0 pages deploy dist \
+              --project-name "$PROJECT" --branch main \
+              --commit-hash "$GITHUB_SHA" --commit-dirty=false \
+              > "$RUNNER_TEMP/wrangler.log" 2>&1; then
+            echo "Deployed to Cloudflare Pages."
+          else
+            echo "::error::Cloudflare Pages deployment failed. Details are withheld from this public log; run wrangler locally to debug."
+            exit 1
+          fi
+        env:
+          PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: 'false'
