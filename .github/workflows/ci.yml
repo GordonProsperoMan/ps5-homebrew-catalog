@@ -84,7 +84,7 @@ jobs:
           node-version: '22'
       - name: Upload to Cloudflare Pages
         # This repository's Actions logs are public. Wrangler's output can
-        # mention account details, so it stays out of the log entirely.
+        # mention account details, so only a redacted error summary is printed.
         run: |
           if npx --yes wrangler@4.143.0 pages deploy dist \
               --project-name "$PROJECT" --branch main \
@@ -92,7 +92,8 @@ jobs:
               > "$RUNNER_TEMP/wrangler.log" 2>&1; then
             echo "Deployed to Cloudflare Pages."
           else
-            echo "::error::Cloudflare Pages deployment failed. Details are withheld from this public log; run wrangler locally to debug."
+            echo "::error::Cloudflare Pages deployment failed. Redacted wrangler errors:"
+            python3 -m catalog.redact "$RUNNER_TEMP/wrangler.log"
             exit 1
           fi
         env:

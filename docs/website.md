@@ -104,7 +104,9 @@ access to this repository.
   pull request workflows never use it.
 - **Public logs stay clean.** Actions logs of a public repository are
   world-readable, so the deploy step keeps wrangler's output out of the log and
-  prints only success or failure. Wrangler telemetry is off.
+  prints only success, or on failure the error codes and messages with account
+  IDs, emails, URLs and quoted values masked (`catalog/redact.py`). Wrangler
+  telemetry is off.
 - **The token can do one thing.** It can edit Cloudflare Pages in one account.
   It can't read DNS, billing or anything else, and you can revoke it at any time.
 - **The site reveals nothing about the account.** Visitors see `homebrew.page`
