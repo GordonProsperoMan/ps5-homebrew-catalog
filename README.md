@@ -3,9 +3,13 @@
 [![CI](https://github.com/blackbearreloaded/ps5-homebrew-catalog/actions/workflows/ci.yml/badge.svg)](https://github.com/blackbearreloaded/ps5-homebrew-catalog/actions/workflows/ci.yml)
 [![Catalog health](https://github.com/blackbearreloaded/ps5-homebrew-catalog/actions/workflows/health.yml/badge.svg)](https://github.com/blackbearreloaded/ps5-homebrew-catalog/actions/workflows/health.yml)
 
-A community-maintained index of PS5 homebrew. Each app is one small JSON record
-that points to a release file its developer hosts in their own GitHub Releases.
-This repository stores no binaries.
+A community-maintained index of **native PS5 homebrew apps**. Each app is one
+small JSON record that points to a release file its developer hosts in their
+own GitHub Releases. This repository stores no binaries.
+
+**Native apps only.** Every listing is an application built for the PS5 that
+installs as a title with its own title ID (`eboot.bin` and `sce_sys/`). ELF
+payloads, PS4 packages, backports, emulator ROMs and web pages aren't listed.
 
 The records here are the source of the [PS5 homebrew website](https://homebrew.page/ps5/),
 and they will feed a console-side store that can install listed apps.

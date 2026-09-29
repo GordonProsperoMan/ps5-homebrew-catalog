@@ -24,7 +24,9 @@ Before merging a submission, a maintainer confirms:
   listed without the original developer's consent.
 - **Honesty.** The name, description, kind and icon describe the app accurately
   and don't imitate another listing or an official product.
-- **Scope.** The app is PS5 homebrew. Pirated commercial content, tools whose
+- **Scope.** The app is native PS5 homebrew: built for the PS5 and installed
+  as its own title (`eboot.bin`, `sce_sys/`). ELF payloads, PS4 packages,
+  backports, emulator ROMs and web pages are out of scope. Pirated commercial content, tools whose
   main purpose is piracy, malware and apps that exfiltrate user data are refused.
 - **License.** The license allows redistribution of the published build.
 
