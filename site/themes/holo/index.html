@@ -1,29 +1,9 @@
-<section class="wrap hero" aria-labelledby="hero-title">
-  <div class="hero__text">
-    <p class="kicker"><span class="spark" aria-hidden="true">✦</span> PS5 homebrew · Series 01 · $app_count cards</p>
-    <h1 class="hero__title" id="hero-title">Collect every <span class="foil-text">homebrew.</span></h1>
-    <p class="lead">A community-built set of apps, games and tools for PS5. Every card links straight to the developer's release, verified byte for byte.</p>
-    <div class="actions">
-      <a class="btn btn--foil" href="#binder">Open the binder</a>
-      <a class="btn btn--ghost" href="$submit_url">Add your card</a>
-    </div>
-    <dl class="hero__stats">
-      <div><dt>Cards</dt><dd>$app_count</dd></div>
-      <div><dt>Games</dt><dd>$game_count</dd></div>
-      <div><dt>Developers</dt><dd>$developer_count</dd></div>
-      <div><dt>Coming soon</dt><dd>$soon_count</dd></div>
-    </dl>
-  </div>
-  <div class="fan" aria-hidden="true">
-    <span class="fan__card"><img src="$fan_icon_3" alt="" width="512" height="512"></span>
-    <span class="fan__card"><img src="$fan_icon_2" alt="" width="512" height="512"></span>
-    <a class="fan__card fan__card--top" href="$spot_url" tabindex="-1" data-tilt="18"><img src="$spot_icon" alt="" width="512" height="512"><span class="holo__foil"></span><span class="holo__glare"></span></a>
-  </div>
-</section>
-
-<section class="wrap binder" id="binder" aria-labelledby="binder-title">
+<section class="wrap binder" id="apps" aria-labelledby="apps-title">
   <div class="binder__head">
-    <h2 id="binder-title">The binder</h2>
+    <div>
+      <h1 class="binder__title" id="apps-title">PS5 homebrew</h1>
+      <p class="binder__intro">Apps, games and tools for PS5. Downloads come from each developer's GitHub release, pinned by SHA-256.</p>
+    </div>
     <span class="binder__count" data-count="{n} app{s}" aria-live="polite">$app_count apps</span>
   </div>
 $toolbar
@@ -36,5 +16,5 @@ $cards
   <ul class="list" data-grid data-view-panel="list">
 $rows
   </ul>
-  <p class="empty" data-empty hidden>No card matches these filters. <a href="$submit_url">Print your own.</a></p>
+  <p class="empty" data-empty hidden>No apps match these filters.</p>
 </section>

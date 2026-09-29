@@ -7,7 +7,7 @@
 <meta name="description" content="$description">
 <link rel="canonical" href="$canonical">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="PS5 Homebrew Collection">
+<meta property="og:site_name" content="PS5 Homebrew">
 <meta property="og:title" content="$title">
 <meta property="og:description" content="$description">
 <meta property="og:url" content="$canonical">
@@ -26,13 +26,13 @@
 <div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
 <header class="top">
   <div class="wrap top__inner">
-    <a class="logo" href="$base"><span class="logo__mark" aria-hidden="true"></span><span class="logo__word">Homebrew<em>Collection</em></span></a>
+    <a class="logo" href="$base"><span class="logo__mark" aria-hidden="true"></span><span class="logo__word">Homebrew<em>PS5 catalog</em></span></a>
     <nav class="top__nav" aria-label="Main">
-      <a href="${base}#binder">Cards</a>
-      <a href="${base}?view=list#binder">List</a>
+      <a href="${base}#apps">Cards</a>
+      <a href="${base}?view=list#apps">List</a>
       <a class="hide-sm" href="$feed_url">Feed</a>
       <a class="hide-sm" href="$repo">GitHub</a>
-      <a class="btn btn--foil btn--sm" href="$submit_url"><span>Add<span class="hide-sm"> your card</span></span></a>
+      <a class="btn btn--foil btn--sm" href="$submit_url"><span>Submit<span class="hide-sm"> app</span></span></a>
     </nav>
   </div>
 </header>
@@ -41,7 +41,6 @@ $body
 </main>
 <footer class="bottom">
   <div class="wrap bottom__inner">
-    <p class="bottom__big">Every card is a real download,<br><span class="foil-text">pinned by SHA-256.</span></p>
     <nav class="bottom__nav" aria-label="Catalog">
       <a href="$submit_url">Publish an app</a>
       <a href="$repo/blob/main/docs/review-policy.md">Review policy</a>
@@ -49,7 +48,7 @@ $body
       <a href="$feed_url">JSON feed</a>
       <a href="$repo">Source</a>
     </nav>
-    <p class="bottom__fine">Community-run and not affiliated with Sony Interactive Entertainment. Downloads come from each developer's own GitHub release. A listing is not a security audit. Printed from <a href="$repo/commit/$commit">$commit_short</a>.</p>
+    <p class="bottom__fine">Community-run and not affiliated with Sony Interactive Entertainment. Downloads come from each developer's own GitHub release. A listing is not a security audit. Built from <a href="$repo/commit/$commit">$commit_short</a>.</p>
   </div>
 </footer>
 </body>

@@ -333,7 +333,6 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
 
     # Store front: the same catalog as cards (index) and as a list, sharing one toolbar.
     releases = [r for r in records if not r.reserved]
-    spotlight = releases[int(hashlib.sha256(commit.encode()).hexdigest(), 16) % len(releases)] if releases else None
     chips = [f'<button type="button" class="chip" data-kind="all" aria-pressed="true">All <span>{total}</span></button>']
     chips += [f'<button type="button" class="chip" data-kind="{kind}" aria-pressed="false">{KIND_PLURALS[kind]} <span>{len(group)}</span></button>'
               for kind, group in kinds.items() if group]
@@ -341,13 +340,9 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
                              for fmt in sorted({artifact_format(r) for r in releases}))
 
 
-    spot = {f"spot_{k}": v for k, v in (numbered[spotlight.titleid] if spotlight else {}).items()}
-    others = [icons[r.titleid] for r in releases if r is not spotlight]
-    fan = others[:2] + [placeholder] * 2
-    index_body = theme_obj.template("index.html").safe_substitute(
-        dict(shared, **spot), cards=items("card.html", records), rows=items("row.html", records),
+    index_body = theme_obj.template("index.html").substitute(
+        shared, cards=items("card.html", records), rows=items("row.html", records),
         toolbar=theme_obj.render("toolbar.html", dict(shared, chips="".join(chips), format_options=format_options)),
-        fan_icon_2=e(fan[0]), fan_icon_3=e(fan[1]),
     )
     write_page(root / "index.html", title="PS5 Homebrew Store — community apps, games and tools",
                description=f"Browse {total} PS5 homebrew apps, games and tools. Every download comes from "

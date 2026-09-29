@@ -105,43 +105,17 @@ code { font-family: var(--mono); font-size: 0.86em; padding: 0.1em 0.4em; border
 .btn--lg { padding: 18px 32px; font-size: 16px; }
 .actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 32px; }
 
-.kicker { display: inline-flex; align-items: center; gap: 10px; margin: 0 0 20px; color: var(--muted); font: 600 13px var(--body); letter-spacing: 0.18em; text-transform: uppercase; }
-.spark { color: var(--gold); }
-
-/* Hero */
-
-.hero { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 40px; align-items: center; min-height: 620px; padding-top: 50px; padding-bottom: 50px; }
-.hero__title { margin: 0; font: 800 clamp(2.9rem, 6.6vw, 5.6rem)/1.02 var(--display); letter-spacing: -0.03em; }
-.lead { max-width: 32em; margin: 26px 0 0; color: #cfcbe0; font-size: 19px; }
-.hero__stats { display: flex; gap: 38px; margin: 46px 0 0; }
-.hero__stats div { display: flex; flex-direction: column-reverse; }
-.hero__stats dt { color: var(--muted); font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; }
-.hero__stats dd { margin: 0; font: 700 38px/1.1 var(--display); }
-
-.fan { position: relative; height: 520px; }
-.fan__card {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 270px;
-  aspect-ratio: 5 / 7;
-  border-radius: 20px;
-  overflow: hidden;
-  background: var(--surface);
-  box-shadow: 0 0 0 6px #1d1d29, 0 0 0 8px rgba(255, 255, 255, 0.15), 0 40px 80px rgba(0, 0, 0, 0.6);
-}
-.fan__card img { width: 100%; height: 100%; object-fit: cover; }
-.fan__card:nth-child(1) { transform: translate(-50%, -50%) translateX(-120px) rotate(-16deg); opacity: 0.75; }
-.fan__card:nth-child(2) { transform: translate(-50%, -50%) translateX(120px) rotate(14deg); opacity: 0.8; }
-.fan__card--top { transform: translate(-50%, -52%) perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform 0.15s; animation: float 6s ease-in-out infinite; }
-@keyframes float { 50% { margin-top: -14px; } }
 
 /* Binder: toolbar shared by the card and list views */
 
-.binder { padding-top: 40px; padding-bottom: 100px; }
-.binder__head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+.binder { padding-top: 36px; padding-bottom: 90px; }
+.binder__head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.binder__intro { margin: 8px 0 0; max-width: 46em; color: var(--muted); font-size: 15px; }
+.kicker { margin: 0 0 14px; color: var(--muted); font: 600 12px var(--body); letter-spacing: 0.16em; text-transform: uppercase; }
+.lead { max-width: 32em; margin: 20px 0 0; color: #cfcbe0; font-size: 18px; }
+.hero__title { margin: 0; font: 800 clamp(2.2rem, 5vw, 3.6rem)/1.05 var(--display); letter-spacing: -0.03em; }
 .binder__head h2,
-.binder__title { margin: 0; font: 800 clamp(2rem, 4vw, 3rem)/1 var(--display); letter-spacing: -0.03em; }
+.binder__title { margin: 0; font: 800 clamp(1.7rem, 3.4vw, 2.4rem)/1.1 var(--display); letter-spacing: -0.03em; }
 .binder__count { color: var(--muted); font-weight: 500; white-space: nowrap; }
 html:not(.js) .js-only { display: none !important; }
 html:not([data-view="list"]) [data-view-panel="list"],
@@ -329,8 +303,6 @@ html[data-view="list"] [data-view-panel="cards"] { display: none !important; }
 .holo:hover .holo__foil, .holo:focus-visible .holo__foil { opacity: 0.55; }
 .holo:hover .holo__glare, .holo:focus-visible .holo__glare { opacity: 1; }
 .holo:focus-visible { outline: 3px solid #fff; outline-offset: 5px; }
-.fan__card--top .holo__foil { opacity: 0.35; }
-.fan__card--top .holo__glare { opacity: 0.6; }
 
 /* App page */
 
@@ -342,7 +314,7 @@ html[data-view="list"] [data-view-panel="cards"] { display: none !important; }
 .holo--big .holo__text { font-size: 15px; -webkit-line-clamp: 4; }
 .holo--big .holo__foil { opacity: 0.25; }
 .holo--big:hover .holo__foil { opacity: 0.6; }
-.showcase__title { margin: 0; font: 800 clamp(1.8rem, 5.4vw, 4.4rem)/1.05 var(--display); letter-spacing: -0.03em; overflow-wrap: break-word; }
+.showcase__title { margin: 0; font: 800 clamp(1.8rem, 4vw, 3.2rem)/1.08 var(--display); letter-spacing: -0.03em; overflow-wrap: break-word; }
 .byline { margin: 12px 0 0; color: var(--muted); font-weight: 500; }
 .attrs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 38px 0 0; }
 .attrs div { padding: 14px 16px; border-radius: 14px; background: rgba(20, 20, 28, 0.85); border: 1px solid var(--line); }
@@ -372,7 +344,6 @@ html[data-view="list"] [data-view-panel="cards"] { display: none !important; }
 /* Footer */
 
 .bottom { position: relative; z-index: 1; padding: 60px 0 36px; border-top: 1px solid var(--line); background: rgba(8, 8, 12, 0.8); }
-.bottom__big { margin: 0 0 30px; font: 800 clamp(1.8rem, 4vw, 3rem)/1.1 var(--display); letter-spacing: -0.03em; }
 .bottom__nav { display: flex; flex-wrap: wrap; gap: 26px; margin-bottom: 20px; }
 .bottom__nav a { color: #d6d2e6; text-decoration: none; font-weight: 500; }
 .bottom__nav a:hover { color: #fff; }
@@ -387,10 +358,7 @@ html[data-view="list"] [data-view-panel="cards"] { display: none !important; }
 }
 
 @media (max-width: 960px) {
-  .hero, .showcase__grid, .panels { grid-template-columns: minmax(0, 1fr); }
-  .hero { min-height: 0; }
-  .fan { height: 420px; }
-  .fan__card { width: 220px; }
+  .showcase__grid, .panels { grid-template-columns: minmax(0, 1fr); }
   .showcase__card { max-width: 340px; }
   .attrs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -433,13 +401,6 @@ html[data-view="list"] [data-view-panel="cards"] { display: none !important; }
   .holo__bottom span:last-child { display: none; }
   .soon-badge { font-size: 10px; padding: 6px 10px; }
   .binder { padding-top: 24px; }
-  .hero { padding-top: 28px; }
-  .hero__stats { flex-wrap: wrap; gap: 18px 26px; }
-  .hero__stats dd { font-size: 30px; }
-  .fan { height: 330px; }
-  .fan__card { width: 170px; }
-  .fan__card:nth-child(1) { transform: translate(-50%, -50%) translateX(-70px) rotate(-14deg); }
-  .fan__card:nth-child(2) { transform: translate(-50%, -50%) translateX(70px) rotate(12deg); }
   .panel { padding: 24px 20px; }
   .attrs { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .actions .btn { flex: 1 1 auto; }
