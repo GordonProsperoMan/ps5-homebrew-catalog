@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>$title</title>
+<meta name="description" content="$description">
+<link rel="canonical" href="$canonical">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="PS5 Homebrew Collection">
+<meta property="og:title" content="$title">
+<meta property="og:description" content="$description">
+<meta property="og:url" content="$canonical">
+<meta property="og:image" content="$og_image">
+<meta name="theme-color" content="$theme_color">
+<link rel="icon" href="${base}favicon.svg" type="image/svg+xml">
+<link rel="alternate" type="application/json" href="$feed_url" title="Catalog feed">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="$fonts">
+<link rel="stylesheet" href="$css">
+<script src="$js"></script>
+</head>
+<body class="$page_class">
+<a class="skip" href="#main">Skip to content</a>
+<div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+<header class="top">
+  <div class="wrap top__inner">
+    <a class="logo" href="$base"><span class="logo__mark" aria-hidden="true"></span><span class="logo__word">Homebrew<em>Collection</em></span></a>
+    <nav class="top__nav" aria-label="Main">
+      <a href="${base}#binder">Binder</a>
+      <a href="$feed_url">Feed</a>
+      <a href="$repo">GitHub</a>
+      <a class="btn btn--foil btn--sm" href="$submit_url">Add your card</a>
+    </nav>
+  </div>
+</header>
+<main id="main">
+$body
+</main>
+<footer class="bottom">
+  <div class="wrap bottom__inner">
+    <p class="bottom__big">Every card is a real download,<br><span class="foil-text">pinned by SHA-256.</span></p>
+    <nav class="bottom__nav" aria-label="Catalog">
+      <a href="$submit_url">Publish an app</a>
+      <a href="$repo/blob/main/docs/review-policy.md">Review policy</a>
+      <a href="$repo/security/advisories/new">Report an app</a>
+      <a href="$feed_url">JSON feed</a>
+      <a href="$repo">Source</a>
+    </nav>
+    <p class="bottom__fine">Community-run and not affiliated with Sony Interactive Entertainment. Downloads come from each developer's own GitHub release. A listing is not a security audit. Printed from <a href="$repo/commit/$commit">$commit_short</a>.</p>
+  </div>
+</footer>
+</body>
+</html>

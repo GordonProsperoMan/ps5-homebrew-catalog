@@ -1,0 +1,46 @@
+<section class="spot spot--app" aria-labelledby="app-title">
+  <img class="backdrop" src="$icon" alt="">
+  <div class="shade"></div>
+  <div class="wrap">
+    <a class="back" href="$base">← Store</a>
+    <div class="app">
+      <div class="app__cover"><img src="$icon" alt="$name icon" width="512" height="512"></div>
+      <div class="app__text">
+        <p class="eyebrow">$kind_label · $titleid</p>
+        <h1 class="spot__title" id="app-title">$name</h1>
+        <p class="spot__meta">by $author</p>
+        <p class="spot__desc">$description</p>
+        <div class="actions">
+          <a class="pill pill--light pill--lg" href="$artifact_url" rel="nofollow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>Download</a>
+          <a class="pill pill--glass pill--lg" href="$source_repo">Source code</a>
+        </div>
+        <ul class="facts">
+          <li><span>Version</span><b>$version</b></li>
+          <li><span>Format</span><b>$format_label</b></li>
+          <li><span>License</span><b>$license</b></li>
+          <li><span>Title ID</span><b>$titleid</b></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap panels">
+  <section class="glass" aria-labelledby="install-title">
+    <h2 id="install-title">Install</h2>
+    <ol class="steps">
+$steps
+    </ol>
+  </section>
+  <section class="glass" aria-labelledby="verify-title">
+    <h2 id="verify-title">Verify</h2>
+    <p class="muted">The catalog pinned this exact file. Before copying it, <code>sha256sum $artifact_name</code> must print:</p>
+    <div class="hash"><code>$sha256</code><button type="button" class="pill pill--glass copy" data-copy="$sha256">Copy</button></div>
+    <dl class="details">
+      <div><dt>File</dt><dd>$artifact_name</dd></div>
+      <div><dt>Release</dt><dd><a href="$release_url">$tag</a></dd></div>
+      <div><dt>Source</dt><dd><a href="$source_repo">$source_short</a></dd></div>
+    </dl>
+    <p class="note">Homebrew runs with elevated access on a jailbroken console. Install only what you trust.</p>
+  </section>
+</div>

@@ -137,6 +137,14 @@ def cmd_pr(args) -> int:
                                              "a maintainer will review it.")
 
 
+def cmd_build(args) -> int:
+    from .site import build_site
+    report = Report()
+    count = build_site(Path(args.out), APPS, report, base=args.base, site_url=args.site_url,
+                       fetch_icons=not args.no_icons, theme=args.theme)
+    return report.emit("Site build", f"Built {count} app page(s) into {args.out}.")
+
+
 def cmd_digest(args) -> int:
     """Print the sha256 GitHub reports for a release asset URL."""
     marker = "/releases/download/"
@@ -180,6 +188,15 @@ def main(argv: list[str] | None = None) -> int:
     digest = commands.add_parser("digest", help="print the sha256 of a GitHub release asset URL")
     digest.add_argument("artifact_url")
     digest.set_defaults(func=cmd_digest)
+
+    from .site import DEFAULT_BASE, DEFAULT_SITE_URL, DEFAULT_THEME, THEMES
+    build = commands.add_parser("build", help="build the static website and JSON feed")
+    build.add_argument("--out", default=str(ROOT / "dist"))
+    build.add_argument("--base", default=DEFAULT_BASE, help="URL path the site is served under")
+    build.add_argument("--site-url", default=DEFAULT_SITE_URL, help="origin used for absolute URLs")
+    build.add_argument("--theme", default=DEFAULT_THEME, choices=sorted(THEMES))
+    build.add_argument("--no-icons", action="store_true", help="skip fetching icons (placeholders)")
+    build.set_defaults(func=cmd_build)
 
     pr = commands.add_parser("pr", help="CI: validate the pull request in GITHUB_EVENT_PATH")
     pr.set_defaults(func=cmd_pr)

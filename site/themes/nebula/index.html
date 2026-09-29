@@ -1,0 +1,59 @@
+<section class="spot" aria-labelledby="spot-title">
+  <img class="backdrop" src="$spot_icon" alt="">
+  <div class="shade"></div>
+  <div class="wrap spot__inner">
+    <div class="spot__text">
+      <p class="eyebrow"><span class="pulse"></span>Spotlight · $spot_kind_label</p>
+      <h1 class="spot__title" id="spot-title">$spot_name</h1>
+      <p class="spot__meta">$spot_author · v$spot_version · $spot_format_label</p>
+      <p class="spot__desc">$spot_description</p>
+      <div class="actions">
+        <a class="pill pill--light pill--lg" href="$spot_artifact_url" rel="nofollow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>Download</a>
+        <a class="pill pill--glass pill--lg" href="$spot_url">View details</a>
+      </div>
+    </div>
+    <a class="spot__cover" href="$spot_url" tabindex="-1" aria-hidden="true"><img src="$spot_icon" alt="" width="512" height="512"></a>
+  </div>
+  <div class="wrap">
+    <ul class="spot__stats" aria-label="Catalog at a glance">
+      <li><b>$app_count</b> titles</li>
+      <li><b>$game_count</b> games</li>
+      <li><b>$developer_count</b> developers</li>
+      <li><b>100%</b> SHA-256 verified</li>
+    </ul>
+  </div>
+</section>
+
+<div class="wrap shelves">
+$shelves
+</div>
+
+<section class="wrap all" id="all" aria-labelledby="all-title">
+  <div class="section-head">
+    <h2 id="all-title">Browse all</h2>
+    <span class="muted" data-count="{n} title{s}" aria-live="polite">$app_count titles</span>
+  </div>
+  <div class="toolbar">
+    <label class="search">
+      <span class="sr-only">Search the catalog</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
+      <input type="search" data-search placeholder="Search games, apps, developers, title IDs" autocomplete="off" spellcheck="false">
+      <kbd aria-hidden="true">/</kbd>
+    </label>
+    <div class="chips" role="group" aria-label="Filter by kind">$chips</div>
+  </div>
+  <ul class="grid" data-grid>
+$cards
+  </ul>
+  <p class="empty" data-empty hidden>No titles match. <a href="$submit_url">Know one that should be here?</a></p>
+</section>
+
+<section class="wrap">
+  <div class="cta">
+    <div>
+      <h2>Made something for PS5?</h2>
+      <p>List it with a pull request. Automation verifies the release and pins its SHA-256, then a maintainer reviews it.</p>
+    </div>
+    <a class="pill pill--light pill--lg" href="$submit_url">Publish your app</a>
+  </div>
+</section>

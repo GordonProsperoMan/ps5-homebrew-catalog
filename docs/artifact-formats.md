@@ -2,14 +2,14 @@
 
 A listed artifact is a single release asset in one of these formats:
 
-| Extension | Contents |
-| --- | --- |
-| `.zip` | The app folder (`<TITLEID>/` with `eboot.bin` and `sce_sys/`), to be extracted to `/data/homebrew/` |
-| `.ffpfsc` | Compressed PFS image of the app |
-| `.ffpkg` | Fake-signed package of the app |
+| Extension | Contents | Where it goes |
+| --- | --- | --- |
+| `.zip` | The app folder `<TITLEID>/` (with `eboot.bin` and `sce_sys/`) | Extract, then copy the folder to `/data/homebrew/` |
+| `.ffpkg` | UFS2 image with `sce_sys/param.json` at its root | Copy the file to `/data/homebrew/` |
+| `.ffpfsc` | Compressed PFS container holding a nested image | Copy the file to `/data/homebrew/` |
 
-Loaders such as [ShadowMountPlus](https://github.com/drakmor/ShadowMountPlus)
-can use all three.
+[ShadowMountPlus](https://github.com/drakmor/ShadowMountPlus) scans
+`/data/homebrew/` and mounts all three; it recommends `.ffpkg` for images.
 
 ## What the catalog verifies
 

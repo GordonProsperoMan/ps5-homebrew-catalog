@@ -83,6 +83,13 @@ of them. Artifacts are downloaded only to hash them; they are never opened or ex
 **[Automation](docs/automation.md)** for how the checks work and why they are safe
 to run on untrusted pull requests.
 
+## Website
+
+Cloudflare Pages rebuilds the store from `main` after every merge. The build
+also publishes a JSON feed at `/ps5/catalog/v1.json` for the console store and
+other clients. See **[Website](docs/website.md)** for the output, themes, local
+preview and Cloudflare setup.
+
 ## Trust and safety
 
 Listing means the automated checks passed and a maintainer reviewed the
@@ -99,9 +106,10 @@ Report a malicious or compromised app privately as described in
 
 ```text
 apps/                 One <TITLEID>.json record per app
-catalog/              Checker and verifier (Python standard library only)
+catalog/              Checker, verifier and site generator (Python standard library)
+site/                 Website themes, templates and shared assets
 tests/                Unit and end-to-end tests for the checker
-docs/                 Submission guide, formats, policy, automation
+docs/                 Submission guide, formats, policy, automation, website
 .github/workflows/    Submission check, CI, weekly health check
 ```
 
@@ -113,6 +121,7 @@ Python 3.10 or newer, no dependencies:
 python3 -m catalog check                  # offline: every record's format
 python3 -m catalog verify PPSA01234       # online: release, sha256, icon
 python3 -m catalog digest <artifact_url>  # print the sha256 GitHub reports
+python3 -m catalog build                  # build the website into dist/
 python3 -m unittest discover -s tests     # checker tests
 ```
 

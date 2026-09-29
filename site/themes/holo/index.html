@@ -1,0 +1,40 @@
+<section class="wrap hero" aria-labelledby="hero-title">
+  <div class="hero__text">
+    <p class="kicker"><span class="spark" aria-hidden="true">✦</span> PS5 homebrew · Series 01 · $app_count cards</p>
+    <h1 class="hero__title" id="hero-title">Collect every <span class="foil-text">homebrew.</span></h1>
+    <p class="lead">A community-built set of apps, games and tools for PS5. Every card links straight to the developer's release, verified byte for byte.</p>
+    <div class="actions">
+      <a class="btn btn--foil" href="#binder">Open the binder</a>
+      <a class="btn btn--ghost" href="$submit_url">Add your card</a>
+    </div>
+    <dl class="hero__stats">
+      <div><dt>Cards</dt><dd>$app_count</dd></div>
+      <div><dt>Games</dt><dd>$game_count</dd></div>
+      <div><dt>Developers</dt><dd>$developer_count</dd></div>
+    </dl>
+  </div>
+  <div class="fan" aria-hidden="true">
+    <span class="fan__card"><img src="$fan_icon_3" alt="" width="512" height="512"></span>
+    <span class="fan__card"><img src="$fan_icon_2" alt="" width="512" height="512"></span>
+    <a class="fan__card fan__card--top" href="$spot_url" tabindex="-1" data-tilt="18"><img src="$spot_icon" alt="" width="512" height="512"><span class="holo__foil"></span><span class="holo__glare"></span></a>
+  </div>
+</section>
+
+<section class="wrap binder" id="binder" aria-labelledby="binder-title">
+  <div class="binder__head">
+    <h2 id="binder-title">The binder</h2>
+    <span class="binder__count" data-count="{n} card{s}" aria-live="polite">$app_count cards</span>
+  </div>
+  <div class="toolbar">
+    <label class="search">
+      <span class="sr-only">Search the collection</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
+      <input type="search" data-search placeholder="Find a card by name, developer or title ID" autocomplete="off" spellcheck="false">
+    </label>
+    <div class="chips" role="group" aria-label="Filter by type">$chips</div>
+  </div>
+  <ul class="cards" data-grid>
+$cards
+  </ul>
+  <p class="empty" data-empty hidden>No card like that in the set yet. <a href="$submit_url">Print your own.</a></p>
+</section>

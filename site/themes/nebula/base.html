@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>$title</title>
+<meta name="description" content="$description">
+<link rel="canonical" href="$canonical">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="PS5 Homebrew Store">
+<meta property="og:title" content="$title">
+<meta property="og:description" content="$description">
+<meta property="og:url" content="$canonical">
+<meta property="og:image" content="$og_image">
+<meta name="theme-color" content="$theme_color">
+<link rel="icon" href="${base}favicon.svg" type="image/svg+xml">
+<link rel="alternate" type="application/json" href="$feed_url" title="Catalog feed">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="$fonts">
+<link rel="stylesheet" href="$css">
+<script src="$js"></script>
+</head>
+<body class="$page_class">
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav">
+  <div class="wrap nav__inner">
+    <a class="brand" href="$base"><img src="${base}favicon.svg" alt="" width="34" height="34"><span>Homebrew <b>Store</b></span></a>
+    <nav class="nav__links" aria-label="Sections">
+      <a href="${base}#shelf-game">Games</a>
+      <a href="${base}#shelf-app">Apps</a>
+      <a href="${base}#shelf-tool">Tools</a>
+      <a href="${base}#all">Browse all</a>
+    </nav>
+    <div class="nav__end">
+      <a class="icon-btn" href="${base}#all" aria-label="Search the catalog"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></a>
+      <a class="pill pill--light" href="$submit_url">Publish</a>
+    </div>
+  </div>
+</header>
+<main id="main">
+$body
+</main>
+<footer class="footer">
+  <div class="wrap footer__inner">
+    <div>
+      <a class="brand" href="$base"><img src="${base}favicon.svg" alt="" width="28" height="28"><span>Homebrew <b>Store</b></span></a>
+      <p>A community catalog of PS5 homebrew. Downloads come from each developer's own GitHub release and are pinned by SHA-256. Not affiliated with Sony Interactive Entertainment. A listing is not a security audit.</p>
+    </div>
+    <nav class="footer__links" aria-label="Catalog">
+      <a href="$submit_url">Publish an app</a>
+      <a href="$repo/blob/main/docs/review-policy.md">Review policy</a>
+      <a href="$repo/security/advisories/new">Report an app</a>
+      <a href="$feed_url">JSON feed</a>
+      <a href="$repo">Source on GitHub</a>
+    </nav>
+  </div>
+  <div class="wrap footer__build">Built from <a href="$repo/commit/$commit">$commit_short</a></div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<section class="wrap stage" aria-labelledby="title">
+  <div class="stage__text">
+    <p class="blink">▶ Press start</p>
+    <h1 class="title" id="title">Home<br>brew<br><span>Shop</span></h1>
+    <p class="lead">Games, apps and tools for your PS5, made by the community. Pick a cart, grab it straight from the developer, play.</p>
+    <div class="buttons">
+      <a class="btn btn--start" href="#shop">▶ Start</a>
+      <a class="btn" href="$submit_url">Sell your game</a>
+    </div>
+  </div>
+  <div class="stage__side">
+    <div class="window scoreboard" aria-label="Catalog at a glance">
+      <p class="window__title">High scores</p>
+      <ol>
+        <li><span>Titles</span><b>$app_count_pad</b></li>
+        <li><span>Games</span><b>$game_count_pad</b></li>
+        <li><span>Devs</span><b>$developer_count_pad</b></li>
+        <li><span>Verified</span><b>100%</b></li>
+      </ol>
+    </div>
+    <a class="pick" href="$spot_url">
+      <span class="pick__tag">Today's pick</span>
+      <img src="$spot_icon" alt="" width="512" height="512">
+      <span class="pick__name">$spot_name</span>
+    </a>
+  </div>
+</section>
+
+<section class="wrap shop" id="shop" aria-labelledby="shop-title">
+  <div class="shop__head">
+    <h2 id="shop-title">▼ All carts ▼</h2>
+    <span class="counter" data-count="{n} in stock" aria-live="polite">$app_count in stock</span>
+  </div>
+  <div class="toolbar">
+    <label class="search">
+      <span class="sr-only">Search the shop</span>
+      <span class="search__prompt" aria-hidden="true">&gt;</span>
+      <input type="search" data-search placeholder="type to search..." autocomplete="off" spellcheck="false">
+    </label>
+    <div class="chips" role="group" aria-label="Filter by kind">$chips</div>
+  </div>
+  <ul class="carts" data-grid>
+$cards
+  </ul>
+  <p class="empty window" data-empty hidden>No carts found. Try again, player 1.</p>
+</section>

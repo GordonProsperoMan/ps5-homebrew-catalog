@@ -26,6 +26,8 @@ jobs:
           python-version: '3.13'
       - run: python3 -m unittest discover -s tests
       - run: python3 -m catalog check
+      - name: Build the website (placeholder icons)
+        run: python3 -m catalog build --no-icons --out "$RUNNER_TEMP/site"
 
   verify:
     name: Verify changed records
