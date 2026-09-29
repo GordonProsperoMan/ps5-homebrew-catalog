@@ -197,5 +197,7 @@ Set `GITHUB_TOKEN` to avoid GitHub's anonymous API rate limit.
 
 ## License
 
+Thanks to John Törnblom (ps5-payload-dev) for the [PS5 Payload SDK](https://github.com/ps5-payload-dev/sdk), which much of the PS5 homebrew scene is built on.
+
 The catalog tooling and documentation are licensed under [GPL-3.0](LICENSE).
 Each listed app is distributed by its own developer under the license in its record.
