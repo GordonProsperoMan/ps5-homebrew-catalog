@@ -10,9 +10,12 @@ then reviews and merges it.
   title ID (`eboot.bin` and `sce_sys/param.json`). ELF payloads, PS4 packages,
   backports, emulator ROMs and web pages aren't listed.
 - A **public GitHub repository** for the app, with a license GitHub can detect.
-- A **release artifact** (`.zip`, `.ffpfsc` or `.ffpkg`, see
-  [artifact formats](artifact-formats.md)) attached to a published release of
-  that repository. Pre-releases are accepted.
+- A **published GitHub release** in that repository, tagged with the app's
+  version (for example `v1.2.0` or `01.000.005`), with a **release artifact**
+  (`.zip`, `.ffpfsc` or `.ffpkg`, see [artifact formats](artifact-formats.md))
+  attached to it. Pre-releases are accepted; files in the repository, drafts,
+  CI artifacts and other download sites aren't. The release tag **is** the
+  version the catalog shows.
 - A **title ID** no other listed app uses.
 - A **square icon** (PNG, JPEG or WebP, 256×256 or larger, at most 2 MiB) at a
   stable HTTPS URL. Your `sce_sys/icon0.png` in the repository works well.
@@ -38,9 +41,15 @@ four uppercase letters followed by five digits.
 Build one of the supported [artifact formats](artifact-formats.md): a `.zip`
 of the `<TITLEID>/` app folder, a `.ffpfsc` image, or a `.ffpkg`.
 
-Attach it to a release. Use a new tag and a new asset for every version; never
-replace the asset of a release that is already listed, because its sha256 would
-no longer match. Enabling GitHub's
+Attach it to a [GitHub release](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository)
+and publish the release (a draft isn't downloadable). Name the tag after the
+app's version: the record's `version` must be that tag, or the tag without a
+leading `v` (tag `v1.2.0` → version `1.2.0` or `v1.2.0`; tag `01.000.005` →
+version `01.000.005`). Don't use generic or moving tags such as `latest`,
+`nightly` or `release`.
+
+Use a new tag and a new asset for every version; never replace the asset of a
+release that is already listed, because its sha256 would no longer match. Enabling GitHub's
 [immutable releases](https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/immutable-releases)
 for your repository makes that guarantee explicit.
 
@@ -159,6 +168,7 @@ your repository.
 | `does not own` | Open the PR from the repository owner's account, or make your organization membership public. |
 | `sha256 does not match` | Recompute the digest of the exact asset in `artifact_url`. |
 | `artifact_url must be` | Link a specific release asset ending in `.zip`, `.ffpfsc` or `.ffpkg`. |
+| `version must match the release tag` | Set `version` to the tag in `artifact_url`, optionally without its leading `v`. |
 | `license ... does not match` | Use the SPDX identifier GitHub shows for your repository. |
 | `name duplicates` | Another app already uses that name; choose a distinct one. |
 | `canonical URL` | Match the repository's exact owner/name capitalization. |

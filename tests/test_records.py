@@ -29,7 +29,9 @@ class RecordTests(unittest.TestCase):
         self.assertEqual(self.errors(record()), [])
 
     def test_license_expression_and_prerelease_version(self):
-        self.assertEqual(self.errors(record(license="MIT OR Apache-2.0", version="0.2.0-alpha.1")), [])
+        self.assertEqual(self.errors(record(
+            license="MIT OR Apache-2.0", version="0.2.0-alpha.1",
+            artifact_url="https://github.com/example/example-app/releases/download/v0.2.0-alpha.1/PPSA01234.zip")), [])
 
     def test_artifact_formats(self):
         for extension in (".zip", ".ffpfsc", ".ffpkg"):
@@ -70,6 +72,14 @@ class RecordTests(unittest.TestCase):
         self.assertRejected(record(kind="demo"), "kind must be")
         self.assertRejected(record(name=""), "must not be empty")
         self.assertRejected(record(version=5), "must be a string")
+
+    def test_version_is_the_release_tag(self):
+        url = "https://github.com/example/example-app/releases/download/{}/PPSA01234.zip"
+        self.assertEqual(self.errors(record(version="0.6.0", artifact_url=url.format("v0.6.0"))), [])
+        self.assertEqual(self.errors(record(version="v0.6.0", artifact_url=url.format("v0.6.0"))), [])
+        self.assertEqual(self.errors(record(version="01.000.005", artifact_url=url.format("01.000.005"))), [])
+        self.assertRejected(record(version="0.6.1", artifact_url=url.format("v0.6.0")), "version must match the release tag")
+        self.assertRejected(record(version="1.0", artifact_url=url.format("release-1.0")), "'release-1.0'")
 
     def test_url_rules(self):
         self.assertRejected(record(source_repo="http://github.com/example/example-app"), "source_repo")

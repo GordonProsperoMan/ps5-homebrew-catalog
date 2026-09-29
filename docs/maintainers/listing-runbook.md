@@ -94,7 +94,7 @@ the app, and ignore vendored examples.
 | `author` | How the developer credits themselves in the README or release notes (the draft suggests the GitHub profile name). |
 | `license` | GitHub's detected SPDX identifier (drafted). If GitHub detects none, use the SPDX identifier the README or source headers state for the project's own code, and quote that text in the pull request. If no license is stated anywhere, stop. |
 
-Leave `version`, `source_repo`, `artifact_url`, `sha256` and `icon_url` as drafted.
+Leave `version` (the release tag, without a leading `v`), `source_repo`, `artifact_url`, `sha256` and `icon_url` as drafted.
 
 ## 5. Validate
 
@@ -150,6 +150,7 @@ Report these to the maintainer instead of opening a pull request:
 | Situation | Why |
 | --- | --- |
 | The draft lists any blocker | The listing can't be verified. |
+| The app is only published outside GitHub releases (repository files, CI artifacts, other sites), or the release tag isn't a version (`latest`, `nightly`) | The catalog needs a published release whose tag is the app's version. |
 | No license stated anywhere | The catalog must show a license. |
 | The main file is a payload (`.elf`, `.bin`, `.lua`) or a PS4 package | Out of scope: native apps only. |
 | The title ID is already listed by a different project | Title IDs are first come, first served; a maintainer decides. |

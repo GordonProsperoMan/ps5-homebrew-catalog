@@ -13,7 +13,7 @@ only [reservations](#reservations-coming-soon) use `null`.
 | `description` | 200 | One short plain-text sentence. No Markdown or HTML; it is displayed as text. |
 | `license` | 64 | SPDX identifier or expression (`GPL-3.0`, `MIT OR Apache-2.0`). Must agree with the license GitHub detects for `source_repo`. |
 | `author` | 64 | Developer or publisher name, as you want it credited. |
-| `version` | 32 | Version shown to users. Letters, digits and `. + _ -`, e.g. `01.000.005` or `0.2.0-alpha.1`. |
+| `version` | 32 | Version shown to users: the release tag in `artifact_url`, optionally without a leading `v` (tag `v0.2.0-alpha.1` → `0.2.0-alpha.1`). Letters, digits and `. + _ -`. |
 | `source_repo` | 200 | `https://github.com/<owner>/<repository>`, using GitHub's exact capitalization. Must be public. |
 | `artifact_url` | 500 | `<source_repo>/releases/download/<tag>/<asset>` for a published release; the asset ends in `.zip`, `.ffpfsc` or `.ffpkg`. Moving links such as `/releases/latest/download/` are rejected. Unique across the catalog. |
 | `sha256` | 64 | SHA-256 of the artifact as 64 lowercase hex characters. Unique across the catalog. |

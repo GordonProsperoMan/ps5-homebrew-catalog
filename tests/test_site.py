@@ -19,7 +19,7 @@ class SiteBuildTests(unittest.TestCase):
         write_record(self.apps, record(name="Evil <script>alert(1)</script>",
                                        description='Quote " and <b>tags</b> & ampersands.'))
         write_record(self.apps, record(
-            titleid="PPSA04321", name="Image Game", kind="game", sha256="b" * 64,
+            titleid="PPSA04321", name="Image Game", kind="game", version="2", sha256="b" * 64,
             artifact_url="https://github.com/example/example-app/releases/download/2/PPSA04321.ffpkg"))
         write_record(self.apps, reservation())
 

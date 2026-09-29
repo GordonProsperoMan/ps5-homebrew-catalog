@@ -91,6 +91,12 @@ def release_parts(data: dict) -> tuple[str, str]:
     return unquote(tag), asset
 
 
+def version_from_tag(tag: str) -> tuple[str, ...]:
+    """Accepted `version` values for a release tag: the tag, or the tag without a leading v."""
+    stripped = tag[1:] if tag[:1] in ("v", "V") and len(tag) > 1 else tag
+    return (tag,) if stripped == tag else (stripped, tag)
+
+
 def _unique_keys(pairs):
     result = {}
     for key, value in pairs:
@@ -177,6 +183,9 @@ def _check_fields(data: dict) -> list[str]:
                             "ending in .zip, .ffpfsc or .ffpkg")
         elif unquote(tag) == "latest":
             problems.append("artifact_url must name a specific release tag, not 'latest'")
+        elif data["version"] not in version_from_tag(unquote(tag)):
+            choices = " or ".join(repr(v) for v in version_from_tag(unquote(tag)))
+            problems.append(f"version must match the release tag {unquote(tag)!r} in artifact_url: use {choices}")
 
     if data["icon_url"] is not None:
         icon = urlsplit(data["icon_url"])

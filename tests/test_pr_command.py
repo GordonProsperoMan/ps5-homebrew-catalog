@@ -67,7 +67,7 @@ class PullRequestCommandTests(unittest.TestCase):
         return status, verified
 
     def new_record(self, **changes):
-        data = record(titleid="PPSA04321", name="Second App", sha256="b" * 64,
+        data = record(titleid="PPSA04321", name="Second App", version="2", sha256="b" * 64,
                       artifact_url="https://github.com/example/example-app/releases/download/2/PPSA04321.zip")
         data.update(changes)
         return json.dumps(data)

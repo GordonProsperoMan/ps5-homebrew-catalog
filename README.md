@@ -29,7 +29,8 @@ flowchart TB
     dev -. artifact_url .-> user
 ```
 
-1. A developer publishes a versioned artifact in their project's GitHub Releases.
+1. A developer publishes a GitHub release of their project, tagged with the app's
+   version, with the app attached.
 2. They open a pull request that adds or updates `apps/<TITLEID>.json`.
 3. Automation verifies the record, the publisher, the release, the exact bytes
    (sha256), and the icon.
@@ -44,7 +45,8 @@ Read **[Submitting an app](docs/submitting.md)**. In short:
 
 1. Package your app as a `.zip` app folder, `.ffpfsc` image or `.ffpkg`
    ([artifact formats](docs/artifact-formats.md)).
-2. Publish it in a release of your public GitHub repository.
+2. Publish it in a GitHub release of your public repository, **tagged with the
+   app's version** (e.g. `v1.2.0`). The tag is the version the catalog shows.
 3. Add `apps/<TITLEID>.json` from the account that owns that repository.
 4. Open a pull request and fix anything the checks report.
 
