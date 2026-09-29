@@ -17,7 +17,7 @@ from urllib.parse import quote, urlsplit
 
 from . import artifacts
 from .github import GitHub
-from .records import FIELDS, TITLE_ID, load_catalog
+from .records import FIELDS, TITLE_ID, load_catalog, tag_version
 from .report import Report
 from .updates import newest_release
 
@@ -109,7 +109,7 @@ def draft_record(repo_value: str, github: GitHub, apps_dir: Path, tag: str | Non
         return draft
     record["artifact_url"] = f"{record['source_repo']}/releases/download/{quote(tag, safe='')}/{asset['name']}"
     record["sha256"] = digest.removeprefix("sha256:")
-    record["version"] = tag.lstrip("vV")
+    record["version"] = tag_version(tag)
     draft.facts.append(f"file: {asset['name']} ({asset.get('size', 0):,} bytes), GitHub digest {digest}")
 
     # Native title evidence: sce_sys/param.json at the release tag.

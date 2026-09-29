@@ -62,6 +62,7 @@ class VersionTests(unittest.TestCase):
         self.assertEqual(new_version("0.5.0", "v0.5.0", "v0.6.0"), "0.6.0")
         self.assertEqual(new_version("v0.5.0", "v0.5.0", "v0.6.0"), "v0.6.0")
         self.assertEqual(new_version("01.000.060", "01.000.060", "01.000.062"), "01.000.062")
+        self.assertEqual(new_version("vk-285-112", "vk-285-112", "vk-290-001"), "vk-290-001")
 
 
 class FindUpdateTests(unittest.TestCase):

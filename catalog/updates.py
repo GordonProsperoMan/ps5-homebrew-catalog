@@ -23,7 +23,7 @@ from urllib.parse import quote
 
 from . import artifacts
 from .github import GitHub
-from .records import Record, load_record
+from .records import Record, load_record, tag_version
 from .report import Report
 
 BUMP_FIELDS = ("version", "artifact_url", "sha256", "icon_url")
@@ -51,7 +51,7 @@ def _extension(name: str) -> str:
 
 
 def _version_tokens(tag: str, version: str | None) -> list[str]:
-    tokens = {tag, tag.lstrip("vV")}
+    tokens = {tag, tag_version(tag)}
     if version:
         tokens.add(version)
     return sorted((t for t in tokens if t), key=len, reverse=True)
@@ -67,7 +67,7 @@ def pick_asset(assets: list[dict], old_name: str, old_tag: str, old_version: str
         return by_name[old_name], "same file name"
     for token in _version_tokens(old_tag, old_version):
         if token in old_name:
-            replacement = new_tag if token == old_tag else new_tag.lstrip("vV")
+            replacement = new_tag if token == old_tag else tag_version(new_tag)
             expected = old_name.replace(token, replacement)
             if expected in by_name:
                 return by_name[expected], "file name with the new version"
@@ -81,7 +81,7 @@ def pick_asset(assets: list[dict], old_name: str, old_tag: str, old_version: str
 def new_version(old_version: str, old_tag: str, new_tag: str) -> str:
     if old_version == old_tag:
         return new_tag
-    return new_tag.lstrip("vV")
+    return tag_version(new_tag)
 
 
 def find_update(record: Record, github: GitHub, icon_exists=None) -> tuple[Update | None, str]:

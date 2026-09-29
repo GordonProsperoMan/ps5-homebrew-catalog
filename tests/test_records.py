@@ -80,6 +80,9 @@ class RecordTests(unittest.TestCase):
         self.assertEqual(self.errors(record(version="01.000.005", artifact_url=url.format("01.000.005"))), [])
         self.assertRejected(record(version="0.6.1", artifact_url=url.format("v0.6.0")), "version must match the release tag")
         self.assertRejected(record(version="1.0", artifact_url=url.format("release-1.0")), "'release-1.0'")
+        # A leading v is dropped only before a digit: "vk-285" is its own version.
+        self.assertEqual(self.errors(record(version="vk-285-112", artifact_url=url.format("vk-285-112"))), [])
+        self.assertRejected(record(version="k-285-112", artifact_url=url.format("vk-285-112")), "use 'vk-285-112'")
 
     def test_url_rules(self):
         self.assertRejected(record(source_repo="http://github.com/example/example-app"), "source_repo")

@@ -91,10 +91,14 @@ def release_parts(data: dict) -> tuple[str, str]:
     return unquote(tag), asset
 
 
+def tag_version(tag: str) -> str:
+    """The version a release tag names: the tag without a leading v before a digit (v1.2 -> 1.2)."""
+    return tag[1:] if re.fullmatch(r"[vV][0-9].*", tag) else tag
+
+
 def version_from_tag(tag: str) -> tuple[str, ...]:
     """Accepted `version` values for a release tag: the tag, or the tag without a leading v."""
-    stripped = tag[1:] if tag[:1] in ("v", "V") and len(tag) > 1 else tag
-    return (tag,) if stripped == tag else (stripped, tag)
+    return (tag,) if tag_version(tag) == tag else (tag_version(tag), tag)
 
 
 def _unique_keys(pairs):
