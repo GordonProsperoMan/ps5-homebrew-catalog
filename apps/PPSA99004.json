@@ -1,0 +1,11 @@
+{
+  "titleid": "PPSA99004",
+  "name": "ProsperoAI",
+  "kind": "app",
+  "description": "Local LLM chat app for PS5.",
+  "license": "GPL-3.0",
+  "author": "BlackBearReloaded",
+  "version": "01.000.000",
+  "source_repo": "https://github.com/blackbearreloaded/ProsperoAI",
+  "artifact_url": "https://github.com/blackbearreloaded/ProsperoAI/releases/download/01.000.000/PPSA99004.zip"
+}
