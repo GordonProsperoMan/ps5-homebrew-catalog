@@ -1,7 +1,8 @@
 """Offline validation of catalog records under apps/.
 
-A record is either a release (exactly FIELDS) or a title ID reservation
-("status": "coming-soon", RESERVATION_FIELDS plus optional icon_url).
+Every record has exactly FIELDS. A record whose URL fields (source_repo,
+artifact_url, icon_url) are null is a title ID reservation shown as coming soon;
+its sha256 is null too, and version and license may be null.
 """
 
 from __future__ import annotations
@@ -19,15 +20,14 @@ FIELDS = (
     "titleid", "name", "kind", "description", "license", "author",
     "version", "source_repo", "artifact_url", "sha256", "icon_url",
 )
-COMING_SOON = "coming-soon"
-RESERVATION_FIELDS = ("titleid", "status", "name", "kind", "description", "author", "source_repo")
-RESERVATION_OPTIONAL = ("icon_url",)
-MAX_RESERVATIONS_PER_OWNER = 5
+RESERVATION_NULL = ("source_repo", "artifact_url", "icon_url", "sha256")
+RESERVATION_NULLABLE = ("version", "license")
+MAX_RESERVATIONS_PER_ACCOUNT = 5
 RESERVATION_STALE_DAYS = 180
 KINDS = ("app", "game", "tool")
 MAX_FILE_BYTES = 8192
 MAX_LENGTH = {
-    "titleid": 9, "status": 11, "name": 64, "kind": 4, "description": 200, "license": 64,
+    "titleid": 9, "name": 64, "kind": 4, "description": 200, "license": 64,
     "author": 64, "version": 32, "source_repo": 200, "artifact_url": 500,
     "sha256": 64, "icon_url": 500,
 }
@@ -59,8 +59,8 @@ class Record:
 
     @property
     def reserved(self) -> bool:
-        """True for a title ID reservation shown as coming soon."""
-        return self.data.get("status") == COMING_SOON
+        """True for a title ID reservation (no release yet), shown as coming soon."""
+        return self.data["artifact_url"] is None
 
     @property
     def owner(self) -> str:
@@ -112,9 +112,19 @@ def text_problem(value: str) -> str | None:
 
 
 def _check_fields(data: dict) -> list[str]:
-    """Validate the values present in data; the field set was checked by the caller."""
+    """Validate values; the field set was checked by the caller."""
     problems = []
+    reservation = data["artifact_url"] is None
+    if reservation:
+        for field in RESERVATION_NULL:
+            if data[field] is not None:
+                problems.append(f"{field} must be null in a reservation (artifact_url is null)")
     for field, value in data.items():
+        if value is None:
+            if not (reservation and field in RESERVATION_NULL + RESERVATION_NULLABLE):
+                problems.append(f"{field} must not be null" + (
+                    "" if reservation else "; only reservations (artifact_url null) may leave fields null"))
+            continue
         if not isinstance(value, str):
             problems.append(f"{field} must be a string")
             continue
@@ -136,12 +146,15 @@ def _check_fields(data: dict) -> list[str]:
                         "choose a unique title ID")
     if data["kind"] not in KINDS:
         problems.append(f"kind must be one of: {', '.join(KINDS)}")
-    if "version" in data and not VERSION.fullmatch(data["version"]):
+    if data["version"] is not None and not VERSION.fullmatch(data["version"]):
         problems.append("version may contain only letters, digits and . + _ -")
-    if "license" in data and not LICENSE.fullmatch(data["license"]):
+    if data["license"] is not None and not LICENSE.fullmatch(data["license"]):
         problems.append("license must be an SPDX identifier or expression, e.g. GPL-3.0 or MIT OR Apache-2.0")
-    if "sha256" in data and not SHA256.fullmatch(data["sha256"]):
+    if data["sha256"] is not None and not SHA256.fullmatch(data["sha256"]):
         problems.append("sha256 must be 64 lowercase hexadecimal characters")
+
+    if reservation:
+        return problems
 
     source = urlsplit(data["source_repo"])
     parts = source.path.strip("/").split("/")
@@ -153,7 +166,7 @@ def _check_fields(data: dict) -> list[str]:
     )
     if not source_ok:
         problems.append("source_repo must be https://github.com/<owner>/<repository>")
-    elif "artifact_url" in data:
+    else:
         prefix = data["source_repo"] + "/releases/download/"
         artifact = urlsplit(data["artifact_url"])
         suffix = data["artifact_url"][len(prefix):] if data["artifact_url"].startswith(prefix) else ""
@@ -165,7 +178,7 @@ def _check_fields(data: dict) -> list[str]:
         elif unquote(tag) == "latest":
             problems.append("artifact_url must name a specific release tag, not 'latest'")
 
-    if "icon_url" in data:
+    if data["icon_url"] is not None:
         icon = urlsplit(data["icon_url"])
         if not (icon.scheme == "https" and icon.hostname and not icon.username and not icon.password
                 and not icon.fragment and icon.path.lower().endswith(ICON_EXTENSIONS)):
@@ -174,21 +187,13 @@ def _check_fields(data: dict) -> list[str]:
 
 
 def _field_set_problems(data: dict) -> list[str]:
-    if "status" in data:
-        if data["status"] != COMING_SOON:
-            return [f'status must be "{COMING_SOON}" for a reservation (omit it for a release)']
-        required, optional = RESERVATION_FIELDS, RESERVATION_OPTIONAL
-        kind = "reservation"
-    else:
-        required, optional = FIELDS, ()
-        kind = "release"
     problems = []
-    missing = [f for f in required if f not in data]
-    extra = sorted(set(data) - set(required) - set(optional))
+    missing = [f for f in FIELDS if f not in data]
+    extra = sorted(set(data) - set(FIELDS))
     if missing:
-        problems.append(f"{kind} is missing field(s): {', '.join(missing)}")
+        problems.append(f"missing field(s): {', '.join(missing)}")
     if extra:
-        problems.append(f"unexpected field(s) for a {kind}: {', '.join(extra)}")
+        problems.append(f"unexpected field(s): {', '.join(extra)}")
     return problems
 
 
@@ -236,21 +241,11 @@ def load_catalog(apps_dir: Path, report: Report) -> list[Record]:
     for field, normalize in (("name", str.casefold), ("artifact_url", str), ("sha256", str)):
         seen: dict[str, str] = {}
         for record in records:
-            if field not in record.data:
+            if record.data[field] is None:
                 continue
             key = normalize(record.data[field])
             if key in seen:
                 report.error(f"apps/{record.path.name}", f"{field} duplicates {seen[key]}")
             else:
                 seen[key] = f"apps/{record.path.name}"
-
-    reservations: dict[str, list[Record]] = {}
-    for record in records:
-        if record.reserved:
-            reservations.setdefault(record.owner.casefold(), []).append(record)
-    for owned in reservations.values():
-        if len(owned) > MAX_RESERVATIONS_PER_OWNER:
-            for record in owned[MAX_RESERVATIONS_PER_OWNER:]:
-                report.error(f"apps/{record.path.name}", f"{record.owner} already holds "
-                             f"{MAX_RESERVATIONS_PER_OWNER} reservations; release or drop one first")
     return records

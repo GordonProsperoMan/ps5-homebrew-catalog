@@ -52,6 +52,11 @@ class GitHub:
     def releases(self, owner: str, name: str) -> list[dict]:
         return self._get(f"/repos/{quote(owner)}/{quote(name)}/releases?per_page=20") or []
 
+    def commit_author(self, repository: str, sha: str) -> str | None:
+        """GitHub login of a commit's author, or None when it isn't linked to an account."""
+        commit = self._get(f"/repos/{repository}/commits/{quote(sha)}") or {}
+        return (commit.get("author") or {}).get("login")
+
     def account_type(self, login: str) -> str | None:
         """'User' or 'Organization', or None when the account doesn't exist."""
         account = self._get(f"/users/{quote(login)}")

@@ -43,14 +43,16 @@ don't meet this policy.
 
 ## Reservations
 
-A reservation (`"status": "coming-soon"`) holds a title ID for an unreleased
-app and shows it as coming soon.
+A reservation (a record whose `artifact_url`, `source_repo` and `icon_url` are
+`null`) holds a title ID for an unreleased app and shows it as coming soon.
 
-- Only the owner of the reservation's `source_repo` can create it, update it,
-  or turn it into a release (automated).
-- Each publisher can hold up to 5 reservations (automated).
+- It belongs to the GitHub account that added it, as recorded in the file's git
+  history. Only that account can update or release it (automated); maintainers
+  handle transfers.
+- Each account can hold up to 5 reservations (automated).
+- Releasing it also requires owning the new `source_repo` (automated).
 - A reservation that hasn't changed for 180 days is flagged by the weekly
-  health check. Maintainers ask the owner in an issue and release the title ID
+  health check. Maintainers ask the holder in an issue and release the title ID
   if there's no reply within 14 days.
 - Reservations get the same honesty and scope review as listings: no
   impersonation, no squatting on other projects' names or IDs.

@@ -41,7 +41,7 @@ class RecordTests(unittest.TestCase):
         del data["sha256"]
         errors = self.errors(data)
         self.assertTrue(any("missing field(s): sha256" in e for e in errors))
-        self.assertTrue(any("unexpected field(s) for a release: extra" in e for e in errors))
+        self.assertTrue(any("unexpected field(s): extra" in e for e in errors))
 
     def test_duplicate_key(self):
         path = self.apps / "PPSA01234.json"
@@ -85,23 +85,26 @@ class RecordTests(unittest.TestCase):
         self.assertRejected(record(icon_url="https://user:pw@example.com/icon.png"), "icon_url")
 
     def test_reservation(self):
-        self.assertEqual(self.errors(reservation(), "PPSA05555.json"), [])
-        self.assertEqual(self.errors(reservation(icon_url="https://example.com/icon.png"), "PPSA05555.json"), [])
-        self.assertRejected(reservation(status="soon"), 'status must be "coming-soon"', "PPSA05555.json")
-        self.assertRejected(reservation(sha256="a" * 64), "unexpected field(s) for a reservation: sha256",
-                            "PPSA05555.json")
-        data = reservation()
-        del data["source_repo"]
-        self.assertRejected(data, "reservation is missing field(s): source_repo", "PPSA05555.json")
-
-    def test_reservation_limit_per_owner(self):
-        for number in range(6):
-            titleid = f"PPSA0555{number}"
-            write_record(self.apps, reservation(titleid=titleid, name=f"Game {number}"))
         report = Report()
-        records = load_catalog(self.apps, report)
-        self.assertEqual(len(records), 6)
-        self.assertEqual(sum("reservations" in m for _, _, m in report.items), 1)
+        loaded = load_record(write_record(self.apps, reservation()), report)
+        self.assertEqual(report.items, [])
+        self.assertTrue(loaded.reserved)
+        self.assertEqual(self.errors(reservation(version="0.1.0", license="MIT")), [])
+
+    def test_reservation_urls_and_hash_must_all_be_null(self):
+        for field, value in (("source_repo", "https://github.com/example/future-game"),
+                             ("icon_url", "https://example.com/icon.png"),
+                             ("sha256", "a" * 64)):
+            with self.subTest(field=field):
+                self.assertRejected(reservation(**{field: value}), f"{field} must be null in a reservation")
+
+    def test_only_reservations_may_be_null(self):
+        self.assertRejected(record(icon_url=None), "icon_url must not be null")
+        self.assertRejected(record(version=None), "version must not be null")
+        self.assertRejected(reservation(name=None), "name must not be null")
+        data = reservation()
+        del data["sha256"]
+        self.assertRejected(data, "missing field(s): sha256")
 
     def test_catalog_uniqueness_and_stray_files(self):
         write_record(self.apps, record())

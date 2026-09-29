@@ -103,6 +103,18 @@ def cmd_push(args) -> int:
     return report.emit("Catalog push check", f"{len(records)} record(s) valid; {len(selected)} verified.")
 
 
+def reservation_holder(record_path: str, github: GitHub) -> str | None:
+    """Login of the account whose commit added a reservation file (the latest addition)."""
+    sha = git("log", "--diff-filter=A", "--format=%H", "-1", "--", record_path).strip()
+    repository = os.environ.get("GITHUB_REPOSITORY")
+    if not sha or not repository:
+        return None
+    try:
+        return github.commit_author(repository, sha)
+    except GitHubError:
+        return None
+
+
 def cmd_pr(args) -> int:
     """Validate a pull request using this (base-branch) code; PR files are read only as data."""
     event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8"))
@@ -133,6 +145,17 @@ def cmd_pr(args) -> int:
             target.write_bytes(git_bytes("show", f"{head}:{change.path}"))
 
         records = {r.path.name: r for r in load_catalog(candidate, report)}
+        holders: dict[str, str | None] = {}
+
+        def holder_of(filename: str) -> str | None:
+            if filename not in holders:
+                holders[filename] = reservation_holder(f"apps/{filename}", github)
+            return holders[filename]
+
+        if any(r.reserved for r in records.values()):
+            base_reserved = [r for r in load_catalog(APPS, Report()) if r.reserved]
+        else:
+            base_reserved = []
         for change in record_changes:
             new = records.get(Path(change.path).name)
             if change.status == "D" or new is None:
@@ -140,7 +163,10 @@ def cmd_pr(args) -> int:
             old_path = ROOT / change.path
             old = load_record(old_path, Report()) if old_path.is_file() else None
             before = report.count("error")
-            check_publisher(author, maintainer, old, new, github, report)
+            held = sum(1 for r in base_reserved if r.path.name != new.path.name
+                       and (holder_of(r.path.name) or "").casefold() == author.casefold())
+            check_publisher(author, maintainer, old, new, github, report,
+                            holder=holder_of(new.path.name) if old and old.reserved else None, held=held)
             if report.count("error") == before:
                 verify_record(new, github, report)
     return report.emit("Pull request check", "The submission meets every automated requirement; "

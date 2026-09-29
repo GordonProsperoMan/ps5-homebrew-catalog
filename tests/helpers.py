@@ -20,12 +20,16 @@ VALID = {
 
 RESERVATION = {
     "titleid": "PPSA05555",
-    "status": "coming-soon",
     "name": "Future Game",
     "kind": "game",
     "description": "A game that is not released yet.",
+    "license": None,
     "author": "Example Dev",
-    "source_repo": "https://github.com/example/future-game",
+    "version": None,
+    "source_repo": None,
+    "artifact_url": None,
+    "sha256": None,
+    "icon_url": None,
 }
 
 

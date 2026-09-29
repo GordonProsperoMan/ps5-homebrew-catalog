@@ -69,33 +69,36 @@ Field rules and limits are in **[Metadata format](docs/metadata.md)**.
 ## Reserve a title ID
 
 Title IDs are first come, first served. If your app isn't released yet, you can
-claim its title ID now; the website shows it as **Coming soon**, with no
-download.
+claim its title ID now with the same eleven-field record, leaving the links
+empty. The website shows it as **Coming soon**, with no download.
 
-1. Add `apps/<TITLEID>.json` with `"status": "coming-soon"` and seven fields:
+1. Add `apps/<TITLEID>.json` with `source_repo`, `artifact_url` and `icon_url`
+   set to `null` (and `sha256` too, since there's no file yet):
 
    ```json
    {
      "titleid": "PPSA01234",
-     "status": "coming-soon",
      "name": "Example Game",
      "kind": "game",
      "description": "One short sentence about the game.",
+     "license": null,
      "author": "Example Dev",
-     "source_repo": "https://github.com/example/example-game"
+     "version": null,
+     "source_repo": null,
+     "artifact_url": null,
+     "sha256": null,
+     "icon_url": null
    }
    ```
 
-   `icon_url` is optional. The repository may still be private; it identifies
-   who owns the reservation.
-2. Open a pull request from the account that owns `source_repo` (or as a public
-   member of that organization). The checks confirm the account and that the ID
-   is free.
-3. When you release, replace the file with a full [release record](#record-format)
-   (no `status`) in a new pull request from the same account. Nobody else can
-   release or take over your title ID.
+   `version` and `license` can be `null` or filled in if you already know them.
+2. Open a pull request. Any GitHub account can reserve a free title ID; the
+   reservation belongs to **the account that opens the pull request**.
+3. When you release, fill in every field (the [release record](#record-format))
+   in a new pull request from the same account. Only that account can update or
+   release the reservation, and releasing also requires owning `source_repo`.
 
-Limits that keep reservations fair: at most **5 per publisher**, and a
+Limits that keep reservations fair: at most **5 per GitHub account**, and a
 reservation left unchanged for **180 days** is flagged by the weekly health
 check and may be released. Details are in
 [Reserving a title ID](docs/submitting.md#reserving-a-title-id) and the
@@ -108,7 +111,8 @@ check and may be released. Details are in
 | JSON format, fields, text, URLs, uniqueness | ✓ | ✓ | ✓ |
 | Only `apps/<TITLEID>.json` changed, one app per PR | ✓ | | |
 | Submitter owns the source repository | ✓ | | |
-| Reservation limits (5 per publisher; stale after 180 days) | ✓ | ✓ | ✓ |
+| Reservations: only the reserving account may change them, 5 per account | ✓ | | |
+| Reservations unchanged for 180 days (report only) | | | ✓ |
 | Release, asset and license exist and match | ✓ | ✓ | ✓ |
 | Downloaded bytes match `sha256` | ✓ | ✓ | ✓ |
 | Icon is a reachable PNG, JPEG or WebP image | ✓ | ✓ | ✓ |

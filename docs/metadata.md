@@ -1,8 +1,9 @@
 # Metadata format
 
 Each app is one UTF-8 JSON file at `apps/<TITLEID>.json`, at most 8 KiB,
-containing a single object with **exactly** the eleven string fields below. No
-field may be empty or missing, and no other fields are allowed.
+containing a single object with **exactly** the eleven fields below. No field
+may be missing and no other fields are allowed. Values are non-empty strings;
+only [reservations](#reservations-coming-soon) use `null`.
 
 | Field | Max length | Rules |
 | --- | ---: | --- |
@@ -20,17 +21,18 @@ field may be empty or missing, and no other fields are allowed.
 
 ## Reservations (coming soon)
 
-A title ID can be reserved before its first release with a shorter record:
+A title ID can be reserved before its first release. A reservation has the same
+eleven fields, with the release-specific ones empty:
 
-| Field | Rules |
+| Field | In a reservation |
 | --- | --- |
-| `titleid`, `name`, `kind`, `description`, `author` | Same rules as above. |
-| `status` | Exactly `coming-soon`. Its presence marks the record as a reservation. |
-| `source_repo` | Same format as above. The repository may still be private. |
-| `icon_url` | Optional; same rules as above. |
+| `artifact_url` | `null`. This is what marks the record as a reservation. |
+| `source_repo`, `icon_url`, `sha256` | Must be `null`. |
+| `version`, `license` | `null`, or a value following the rules above. |
+| `titleid`, `name`, `kind`, `description`, `author` | Required, same rules as above. |
 
-No other fields are allowed. The same name uniqueness applies, and each
-repository owner can hold at most 5 reservations. See
+`null` is allowed nowhere else. A reservation belongs to the GitHub account
+that added it, and each account can hold at most 5. See
 [Reserving a title ID](submitting.md#reserving-a-title-id).
 
 ## Text rules
@@ -44,7 +46,8 @@ spoofed and keeps records safe to render anywhere.
 ## JSON rules
 
 - Duplicate keys are rejected, even with identical values.
-- Values must be strings; numbers and `null` are rejected.
+- Values must be strings; numbers are rejected, and `null` is accepted only in
+  reservations.
 - Formatting is free, but the repository uses two-space indentation and field
   order as shown in the [README](../README.md#record-format).
 

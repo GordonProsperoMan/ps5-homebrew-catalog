@@ -62,7 +62,8 @@ class SiteBuildTests(unittest.TestCase):
         self.assertEqual([a["format"] for a in feed["apps"]], ["zip", "ffpkg"])
         self.assertTrue(feed["apps"][0]["page"].endswith("/ps5/app/PPSA01234/"))
         self.assertEqual([a["titleid"] for a in feed["coming_soon"]], ["PPSA05555"])
-        self.assertNotIn("artifact_url", feed["coming_soon"][0])
+        self.assertIsNone(feed["coming_soon"][0]["artifact_url"])
+        self.assertIsNone(feed["coming_soon"][0]["source_repo"])
 
     def test_reservation_pages(self):
         self.build()
@@ -70,6 +71,7 @@ class SiteBuildTests(unittest.TestCase):
         page = (root / "app" / "PPSA05555" / "index.html").read_text(encoding="utf-8")
         self.assertIn("Not released yet", page)
         self.assertNotIn("rel=\"nofollow\"", page)
+        self.assertNotIn("None", page)
         for listing in ("index.html", "list/index.html"):
             html = (root / listing).read_text(encoding="utf-8")
             self.assertIn('data-status="soon"', html)

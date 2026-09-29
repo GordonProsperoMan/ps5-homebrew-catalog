@@ -59,9 +59,12 @@ through a pull request.
 
 Re-verifies every record end to end (release, digest, download, icon)
 and reports projects that have published a newer release than the one listed.
-It also warns about reservations that haven't changed in 180 days. For a
-reservation, only the account, repository URL and optional icon are checked,
-because there is no release yet.
+It also warns about reservations that haven't changed in 180 days.
+
+A reservation has no repository, file or icon to verify. For those, the
+submission check confirms who may change them instead: it looks up the commit
+that added the file and only lets that account update or release the
+reservation, and it enforces the limit of 5 reservations per account.
 A failure notifies maintainers; see the [review policy](review-policy.md) for
 how broken listings are handled.
 
@@ -73,6 +76,11 @@ Maintainers should protect `main` with a ruleset for pull requests that:
   checks to pass,
 - requires one approving review, and
 - blocks force pushes and deletion.
+
+Also allow only **squash merging** for pull requests. The squash commit is
+authored by the pull request's author, which is how the submission check knows
+who holds a reservation. If that commit can't be linked to a GitHub account, a
+maintainer has to review changes to the reservation.
 
 Maintainers can keep a bypass for direct pushes, which are still verified by the
 push workflow.

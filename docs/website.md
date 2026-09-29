@@ -55,7 +55,7 @@ dist/
       "icon": "https://homebrew.page/ps5/assets/icon-PPSA01234.<hash>.webp" }
   ],
   "coming_soon": [
-    { "…reservation fields…": "", "updated": "…", "page": "…", "icon": "…" }
+    { "…all eleven fields, links and sha256 null…": "", "updated": "…", "page": "…", "icon": "…" }
   ]
 }
 ```

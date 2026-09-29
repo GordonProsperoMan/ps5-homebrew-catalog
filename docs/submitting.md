@@ -101,33 +101,36 @@ merge.
 Working on something that isn't released yet? Reserve its title ID so nobody
 else takes it. The website shows it as **Coming soon**, with no download.
 
-Add `apps/<TITLEID>.json` with `"status": "coming-soon"` and these fields:
+A reservation is a normal record with its links left empty: `source_repo`,
+`artifact_url` and `icon_url` are `null`, and so is `sha256`.
 
 ```json
 {
   "titleid": "PPSA01234",
-  "status": "coming-soon",
   "name": "Example Game",
   "kind": "game",
   "description": "One short sentence about the game.",
+  "license": null,
   "author": "Example Dev",
-  "source_repo": "https://github.com/example/example-game"
+  "version": null,
+  "source_repo": null,
+  "artifact_url": null,
+  "sha256": null,
+  "icon_url": null
 }
 ```
 
-- `icon_url` is optional. Without it, the card uses a placeholder.
-- `source_repo` may still be private; it names the account that owns the
-  reservation. Only that account, or a public member of that organization, can
-  open the pull request, and only it can later release the app.
-- Each publisher can hold up to 5 reservations at a time.
+- `version` and `license` may be `null` or filled in.
+- The reservation belongs to the GitHub account that opens the pull request
+  that adds it. Only that account can later update it or release the app.
+- Each account can hold up to 5 reservations at a time.
 - Keep the reservation alive by updating it at least every 180 days. Stale
   reservations are flagged by the weekly health check and may be released; see
   the [review policy](review-policy.md#reservations).
 
-**To release it,** replace the file's contents with a full release record
-(the eleven fields in [Metadata format](metadata.md), without `status`) in a
-new pull request from the same account. The card becomes downloadable after
-the merge.
+**To release it,** fill in every field (see [Metadata format](metadata.md)) in a
+new pull request from the same account. That account must also own the
+`source_repo` you add. The card becomes downloadable after the merge.
 
 ## Updating your app
 
@@ -151,5 +154,7 @@ your repository.
 | `name duplicates` | Another app already uses that name; choose a distinct one. |
 | `canonical URL` | Match the repository's exact owner/name capitalization. |
 | `may change only apps/` | Remove changes to other files from the PR. |
-| `unexpected field(s) for a reservation` | A reservation has only the seven fields above (plus optional `icon_url`). |
+| `must be null in a reservation` | With `artifact_url` null, `source_repo`, `icon_url` and `sha256` must be null too. |
+| `must not be null` | Only reservations may use `null`, and only for the link, hash, version and license fields. |
+| `reserved by @…` | Only the account that reserved the title ID can change it. |
 | `already holds 5 reservations` | Release or remove one of your reservations first. |

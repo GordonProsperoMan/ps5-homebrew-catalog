@@ -217,7 +217,7 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
     icons: dict[str, str] = {}
     for record in records:
         icons[record.titleid] = placeholder
-        if not fetch_icons or "icon_url" not in record.data:
+        if not fetch_icons or record.data["icon_url"] is None:
             continue
         try:
             content, extension = process_icon(artifacts.fetch_small(record.data["icon_url"], artifacts.MAX_ICON_BYTES))
@@ -235,18 +235,18 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
 
     def app_values(record: Record, number: int) -> dict:
         d = record.data
-        values = {k: e(v) for k, v in d.items()}
+        values = {k: "" if v is None else e(v) for k, v in d.items()}
         values.update(
             url=e(page_url(record)),
             icon=e(icons[record.titleid]),
             kind_label=e(KIND_LABELS[d["kind"]]),
-            source_short=e(f"{record.owner}/{record.repo}"),
             status="soon" if record.reserved else "available",
             format="",
         )
         if not record.reserved:
             fmt = artifact_format(record)
             values.update(
+                source_short=e(f"{record.owner}/{record.repo}"),
                 format=e(fmt),
                 format_label=e(FORMAT_LABELS[fmt]),
                 artifact_name=e(unquote(record.asset_name)),
@@ -290,7 +290,7 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
         "commit": e(commit),
         "commit_short": e(commit[:7]),
         "app_count": total,
-        "developer_count": len({r.owner.casefold() for r in records}),
+        "developer_count": len({r.data["author"].casefold() for r in records}),
         "game_count": len(kinds["game"]),
         "apps_only_count": len(kinds["app"]),
         "tool_count": len(kinds["tool"]),

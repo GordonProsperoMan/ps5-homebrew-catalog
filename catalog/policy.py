@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .github import GitHub, GitHubError
-from .records import RECORD_PATH, Record
+from .records import MAX_RESERVATIONS_PER_ACCOUNT, RECORD_PATH, Record
 from .report import Report
 
 MAINTAINER_ASSOCIATIONS = {"OWNER", "MEMBER", "COLLABORATOR"}
@@ -49,16 +49,42 @@ def check_changes(changes: list[Change], maintainer: bool, report: Report) -> li
 
 
 def check_publisher(author: str, maintainer: bool, old: Record | None, new: Record,
-                    github: GitHub, report: Report) -> None:
-    """Only the owner of source_repo (or a public member of that org) may list or update an app."""
+                    github: GitHub, report: Report, holder: str | None = None, held: int = 0) -> None:
+    """Decide whether the PR author may create or change this record.
+
+    Releases belong to the owner of source_repo (or public members of that
+    organization). Reservations have no source_repo; they belong to the account
+    that added them (holder, from the file's git history). held is how many
+    other reservations the author already holds.
+    """
     name = f"apps/{new.path.name}"
-    if old and old.owner.casefold() != new.owner.casefold():
+    if old and old.reserved:
+        if holder is None and not maintainer:
+            report.error(name, f"could not determine who reserved {new.titleid}; a maintainer must review")
+            return
+        if holder and holder.casefold() != author.casefold():
+            if maintainer:
+                report.warning(name, f"changes {new.titleid}, which is reserved by @{holder}")
+            else:
+                report.error(name, f"{new.titleid} is reserved by @{holder}; only that account can "
+                                   "update or release it")
+                return
+    elif old and new.reserved:
+        if not maintainer:
+            report.error(name, f"{new.titleid} is already released; it can't go back to a reservation")
+            return
+    elif old and old.owner.casefold() != new.owner.casefold():
         if maintainer:
             report.warning(name, f"moves {new.titleid} from {old.owner} to {new.owner}")
         else:
             report.error(name, f"{new.titleid} is registered to {old.owner}; ownership transfers "
                                "require a maintainer")
             return
+    if new.reserved:
+        if old is None and not maintainer and held >= MAX_RESERVATIONS_PER_ACCOUNT:
+            report.error(name, f"@{author} already holds {MAX_RESERVATIONS_PER_ACCOUNT} reservations; "
+                               "release or remove one first")
+        return
     if maintainer:
         return
     if author.casefold() == new.owner.casefold():

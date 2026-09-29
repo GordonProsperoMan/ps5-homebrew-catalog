@@ -10,7 +10,7 @@ from unittest import mock
 
 import catalog.__main__ as cli
 
-from helpers import record, write_record
+from helpers import record, reservation, write_record
 
 
 def run(cwd, *args):
@@ -53,13 +53,15 @@ class PullRequestCommandTests(unittest.TestCase):
             "number": 1, "user": {"login": author}, "author_association": association}}), encoding="utf-8")
         return event
 
-    def run_pr(self, event):
+    def run_pr(self, event, commit_author="example"):
         verified = []
+        github = mock.Mock(account_type=lambda login: "User", commit_author=lambda repo, sha: commit_author)
         with mock.patch.object(cli, "ROOT", self.clone), \
                 mock.patch.object(cli, "APPS", self.clone / "apps"), \
                 mock.patch.object(cli, "verify_record", lambda r, g, rep: verified.append(r.titleid)), \
-                mock.patch.object(cli, "GitHub", lambda: mock.Mock(account_type=lambda login: "User")), \
-                mock.patch.dict(os.environ, {"GITHUB_EVENT_PATH": str(event), "GITHUB_STEP_SUMMARY": ""}), \
+                mock.patch.object(cli, "GitHub", lambda: github), \
+                mock.patch.dict(os.environ, {"GITHUB_EVENT_PATH": str(event), "GITHUB_STEP_SUMMARY": "",
+                                             "GITHUB_REPOSITORY": "owner/catalog"}), \
                 mock.patch("sys.stdout"), mock.patch("sys.stderr"):
             status = cli.main(["pr"])
         return status, verified
@@ -88,6 +90,27 @@ class PullRequestCommandTests(unittest.TestCase):
     def test_catalog_wide_rules_use_merged_view(self):
         event = self.open_pr("example", "NONE", {"apps/PPSA04321.json": self.new_record(name="Example App")})
         self.assertEqual(self.run_pr(event)[0], 1)
+
+
+    def test_anyone_can_reserve_a_free_title_id(self):
+        event = self.open_pr("newdev", "NONE", {"apps/PPSA05555.json": json.dumps(reservation())})
+        self.assertEqual(self.run_pr(event)[0], 0)
+
+    def test_only_the_holder_can_change_a_reservation(self):
+        write_record(self.origin / "apps", reservation())
+        self.git("add", ".")
+        self.git("commit", "-q", "-m", "reserve")
+        changed = json.dumps(reservation(name="Renamed Game"))
+        event = self.open_pr("mallory", "NONE", {"apps/PPSA05555.json": changed})
+        self.assertEqual(self.run_pr(event, commit_author="example")[0], 1)
+
+    def test_holder_can_update_a_reservation(self):
+        write_record(self.origin / "apps", reservation())
+        self.git("add", ".")
+        self.git("commit", "-q", "-m", "reserve")
+        changed = json.dumps(reservation(name="Renamed Game"))
+        event = self.open_pr("example", "NONE", {"apps/PPSA05555.json": changed})
+        self.assertEqual(self.run_pr(event, commit_author="example")[0], 0)
 
 
 if __name__ == "__main__":

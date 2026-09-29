@@ -5,7 +5,7 @@ from catalog.policy import Change, check_changes, check_publisher, is_maintainer
 from catalog.records import Record
 from catalog.report import Report
 
-from helpers import record
+from helpers import record, reservation
 
 
 class FakeGitHub:
@@ -75,11 +75,36 @@ class ChangeTests(unittest.TestCase):
         self.assertFalse(is_maintainer("FIRST_TIME_CONTRIBUTOR"))
 
 
+RESERVED = Record(Path("PPSA01234.json"), reservation(titleid="PPSA01234"))
+
+
 class PublisherTests(unittest.TestCase):
-    def check(self, author, old=None, new=None, maintainer=False, github=None):
+    def check(self, author, old=None, new=None, maintainer=False, github=None, holder=None, held=0):
         report = Report()
-        check_publisher(author, maintainer, old, new or make_record(), github or FakeGitHub(), report)
+        check_publisher(author, maintainer, old, new or make_record(), github or FakeGitHub(), report,
+                        holder=holder, held=held)
         return errors(report)
+
+    def test_anyone_may_reserve_within_the_limit(self):
+        self.assertEqual(self.check("newdev", new=RESERVED, held=4), [])
+        self.assertTrue(any("already holds 5" in e for e in self.check("newdev", new=RESERVED, held=5)))
+        self.assertEqual(self.check("owner", new=RESERVED, held=9, maintainer=True), [])
+
+    def test_only_the_holder_may_update_or_release_a_reservation(self):
+        self.assertEqual(self.check("example", old=RESERVED, new=RESERVED, holder="Example"), [])
+        self.assertEqual(self.check("example", old=RESERVED, new=make_record(), holder="example"), [])
+        self.assertTrue(any("reserved by @example" in e
+                            for e in self.check("mallory", old=RESERVED, new=RESERVED, holder="example")))
+        self.assertTrue(self.check("mallory", old=RESERVED, new=make_record("mallory"), holder="example"))
+        self.assertTrue(any("could not determine" in e
+                            for e in self.check("example", old=RESERVED, new=RESERVED, holder=None)))
+
+    def test_releasing_still_requires_repository_ownership(self):
+        self.assertTrue(any("does not own" in e
+                            for e in self.check("holder", old=RESERVED, new=make_record("someone"), holder="holder")))
+
+    def test_release_cannot_become_a_reservation(self):
+        self.assertTrue(any("already released" in e for e in self.check("example", old=make_record(), new=RESERVED)))
 
     def test_repository_owner_may_publish(self):
         self.assertEqual(self.check("Example"), [])

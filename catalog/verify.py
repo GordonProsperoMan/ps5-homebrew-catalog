@@ -52,24 +52,8 @@ def verify_record(record: Record, github: GitHub, report: Report, download: bool
 
 
 def _verify_reservation(name: str, record: Record, github: GitHub, report: Report) -> None:
-    """Reservations have no release yet; the repository may still be private."""
-    try:
-        repo = github.repo(record.owner, record.repo)
-        if github.account_type(record.owner) is None:
-            report.error(name, f"GitHub account {record.owner} does not exist")
-            return
-    except GitHubError as error:
-        report.error(name, str(error))
-        return
-    if repo is None:
-        report.notice(name, "reservation: the source repository is private or not created yet")
-    elif f"https://github.com/{repo['full_name']}" != record.data["source_repo"]:
-        report.error(name, f"source_repo must use the canonical URL https://github.com/{repo['full_name']}")
-        return
-    else:
-        report.notice(name, "reservation: release checks run when it becomes a release")
-    if "icon_url" in record.data:
-        _verify_icon(name, record.data["icon_url"], report)
+    """Reservations have no repository, release or icon yet; there is nothing online to check."""
+    report.notice(name, "reservation: release checks run when it becomes a release")
 
 
 def _check_license(name: str, license_value: str, repo: dict, report: Report) -> None:
