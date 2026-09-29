@@ -1,47 +1,123 @@
 # PS5 Homebrew Catalog
 
-A small public catalog of BlackBearReloaded's titled PS5 homebrew. The current entries are `PPSA99001` through `PPSA99008`.
+[![CI](https://github.com/blackbearreloaded/ps5-homebrew-catalog/actions/workflows/ci.yml/badge.svg)](https://github.com/blackbearreloaded/ps5-homebrew-catalog/actions/workflows/ci.yml)
+[![Catalog health](https://github.com/blackbearreloaded/ps5-homebrew-catalog/actions/workflows/health.yml/badge.svg)](https://github.com/blackbearreloaded/ps5-homebrew-catalog/actions/workflows/health.yml)
 
-The metadata in this repository is used to dynamically update the [PS5 homebrew website](https://homebrew.page/ps5/).
+A community-maintained index of PS5 homebrew. Each app is one small JSON record
+that points to a release ZIP its developer hosts in their own GitHub Releases.
+This repository stores no binaries.
 
-## JSON metadata format
+The records here are the source of the [PS5 homebrew website](https://homebrew.page/ps5/),
+and they will feed a console-side store that can install listed apps.
 
-Add one file at `apps/<titleid>.json`; its filename must match the `titleid` value. Each file is a single JSON object with **exactly** these ten string fields:
+## How it works
+
+```text
+ Developer's repository                 This repository                  Users
+ ──────────────────────                 ───────────────                  ─────
+ GitHub Release                         apps/<TITLEID>.json   ──build──▶  homebrew.page/ps5
+   └── <TITLEID>.zip  ◀── artifact_url ─  name, version, sha256, …        (website + JSON feed)
+                                                ▲                           │
+                         pull request ──────────┘                           ▼
+                         automated checks + maintainer review        download straight from
+                                                                     the developer's release
+```
+
+1. A developer publishes a versioned ZIP in their project's GitHub Releases.
+2. They open a pull request that adds or updates `apps/<TITLEID>.json`.
+3. Automation verifies the record, the publisher, the release, the exact bytes
+   (sha256), the package layout, and the icon.
+4. A maintainer reviews and merges; the website and feed are rebuilt from `main`.
+
+Downloads always come from the developer's own release, pinned by sha256, so a
+listed app can't be silently replaced.
+
+## Add your app
+
+Read **[Submitting an app](docs/submitting.md)**. In short:
+
+1. Package your app in the [`homebrew-zip-v1` layout](docs/package-format.md): a
+   single `<TITLEID>/` folder containing `eboot.bin` and `sce_sys/param.json`.
+2. Publish the ZIP in a release of your public GitHub repository.
+3. Add `apps/<TITLEID>.json` from the account that owns that repository.
+4. Open a pull request and fix anything the checks report.
+
+## Record format
+
+One file per app, named after its title ID, with exactly these eleven string fields:
 
 ```json
 {
-  "titleid": "PPSA99001",
-  "name": "App name",
+  "titleid": "PPSA01234",
+  "name": "Example App",
   "kind": "app",
   "description": "One short sentence about the app.",
   "license": "GPL-3.0",
-  "author": "Publisher name",
-  "version": "1.0.0",
-  "source_repo": "https://github.com/publisher/project",
-  "artifact_url": "https://github.com/publisher/project/releases/download/v1.0.0/PPSA99001.zip",
-  "icon_url": "https://raw.githubusercontent.com/publisher/project/v1.0.0/sce_sys/icon0.png"
+  "author": "Example Dev",
+  "version": "01.000.000",
+  "source_repo": "https://github.com/example/example-app",
+  "artifact_url": "https://github.com/example/example-app/releases/download/01.000.000/PPSA01234.zip",
+  "sha256": "2432640a5dc4a4cb57ffcdb2ce347329a687ddff526f6e19d0495f1efd136317",
+  "icon_url": "https://raw.githubusercontent.com/example/example-app/01.000.000/sce_sys/icon0.png"
 }
 ```
 
-| Field | Expected value |
-| --- | --- |
-| `titleid` | PS5 title ID in the current `PPSA99001`–`PPSA99009` range; must match the filename. |
-| `name` | App's display name. |
-| `kind` | `app`, `game`, or `tool`. |
-| `description` | Short plain-text description. |
-| `license` | Project's license identifier, such as `GPL-3.0`. |
-| `author` | Developer or publisher name. |
-| `version` | Version displayed in the catalog. |
-| `source_repo` | HTTPS URL of the project's GitHub repository. |
-| `artifact_url` | Direct, version-specific `.zip` asset URL from that repository's GitHub Releases. |
-| `icon_url` | Direct HTTPS link to a PNG, JPEG, or WebP image; use a release tag or commit to keep it stable. |
+Field rules and limits are in **[Metadata format](docs/metadata.md)**.
 
-The validator rejects missing or extra fields, duplicate JSON keys, empty strings, values over 500 characters, and files over 8 KiB. It checks URL format but does not download the artifact or icon.
+## What gets checked
 
-Validate changes with:
+| Check | Pull request | Push to `main` | Weekly |
+| --- | :---: | :---: | :---: |
+| JSON format, fields, text, URLs, uniqueness | ✓ | ✓ | ✓ |
+| Only `apps/<TITLEID>.json` changed, one app per PR | ✓ | | |
+| Submitter owns the source repository | ✓ | | |
+| Release, asset and license exist and match | ✓ | ✓ | ✓ |
+| Downloaded bytes match `sha256` | ✓ | ✓ | ✓ |
+| ZIP layout, integrity, size limits, `param.json` title ID | ✓ | ✓ | ✓ |
+| Icon is a reachable PNG, JPEG or WebP image | ✓ | ✓ | ✓ |
+| Newer upstream release available (report only) | | | ✓ |
 
-```sh
-python3 scripts/validate.py
+Pushes to `main` verify only the records they change; the weekly run verifies all
+of them. Artifacts are downloaded and inspected but never executed. See
+**[Automation](docs/automation.md)** for how the checks work and why they are safe
+to run on untrusted pull requests.
+
+## Trust and safety
+
+Listing means the automated checks passed and a maintainer reviewed the
+submission's publisher and provenance. It is **not** a security audit of the
+app's code. See the **[review policy](docs/review-policy.md)** for how listings,
+updates, title ID disputes and withdrawals are handled.
+
+Report a broken or incorrect listing with an
+[issue](https://github.com/blackbearreloaded/ps5-homebrew-catalog/issues/new/choose).
+Report a malicious or compromised app privately as described in
+[SECURITY.md](SECURITY.md).
+
+## Repository layout
+
+```text
+apps/                 One <TITLEID>.json record per app
+catalog/              Checker and verifier (Python standard library only)
+tests/                Unit and end-to-end tests for the checker
+docs/                 Submission guide, formats, policy, automation
+.github/workflows/    Submission check, CI, weekly health check
 ```
 
-The same check runs on pull requests and pushes to `main`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the submission workflow.
+## Run the checks locally
+
+Python 3.10 or newer, no dependencies:
+
+```sh
+python3 -m catalog check                  # offline: every record's format
+python3 -m catalog verify PPSA01234       # online: release, sha256, ZIP, icon
+python3 -m catalog digest <artifact_url>  # print the sha256 GitHub reports
+python3 -m unittest discover -s tests     # checker tests
+```
+
+Set `GITHUB_TOKEN` to avoid GitHub's anonymous API rate limit.
+
+## License
+
+The catalog tooling and documentation are licensed under [GPL-3.0](LICENSE).
+Each listed app is distributed by its own developer under the license in its record.

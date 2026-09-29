@@ -1,0 +1,35 @@
+name: Withdrawal or ownership transfer
+description: Remove your app from the catalog, or move its listing to another repository owner.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Open this issue from the account that owns the listed `source_repo`.
+        For a transfer, the new owner should confirm in a comment.
+  - type: input
+    id: titleid
+    attributes:
+      label: Title ID
+      placeholder: PPSA01234
+    validations:
+      required: true
+  - type: dropdown
+    id: request
+    attributes:
+      label: Request
+      options:
+        - Withdraw the listing
+        - Transfer the listing to another repository owner
+    validations:
+      required: true
+  - type: input
+    id: new_repo
+    attributes:
+      label: New source repository (transfers only)
+      placeholder: https://github.com/new-owner/repository
+  - type: textarea
+    id: reason
+    attributes:
+      label: Reason
+    validations:
+      required: false

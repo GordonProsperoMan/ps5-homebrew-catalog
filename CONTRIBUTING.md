@@ -1,5 +1,30 @@
 # Contributing
 
-Add or update one file under `apps/` using the [JSON metadata format](README.md#json-metadata-format). Name it `<titleid>.json`, for example `PPSA99001.json`.
+## Listing or updating an app
 
-Publish the ZIP in your project's GitHub Releases and use its exact, version-specific asset URL. Provide a direct HTTPS link to your app's icon image, preferably pinned to a release tag or commit. Run `python3 scripts/validate.py` before submitting a change.
+Follow **[Submitting an app](docs/submitting.md)**. App pull requests may change
+only `apps/<TITLEID>.json`, one app at a time, and must come from the account
+that owns the app's source repository.
+
+## Reporting a problem with a listing
+
+Use the [issue templates](https://github.com/blackbearreloaded/ps5-homebrew-catalog/issues/new/choose)
+for broken downloads, wrong information, withdrawals and ownership transfers.
+Report malicious or compromised apps privately; see [SECURITY.md](SECURITY.md).
+
+## Changing the tooling or documentation
+
+Open an issue first to discuss the change. Pull requests that touch anything
+outside `apps/` fail the community submission check and are handled by
+maintainers.
+
+The checker in `catalog/` uses only the Python standard library (3.10+). Before
+proposing a change, run:
+
+```sh
+python3 -m unittest discover -s tests
+python3 -m catalog check
+```
+
+Keep checks deterministic, bounded and free of code execution: the submission
+check runs on untrusted pull requests. See [Automation](docs/automation.md).

@@ -1,0 +1,29 @@
+name: Problem with a listing
+description: A download, icon or detail of a listed app is broken or wrong.
+body:
+  - type: input
+    id: titleid
+    attributes:
+      label: Title ID
+      placeholder: PPSA01234
+    validations:
+      required: true
+  - type: dropdown
+    id: problem
+    attributes:
+      label: Problem
+      options:
+        - Download is missing or fails
+        - Icon is missing or wrong
+        - Name, description, author or license is wrong
+        - App doesn't work as described
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: What happened, and what did you expect? Include firmware and loader versions if relevant.
+    validations:
+      required: true
