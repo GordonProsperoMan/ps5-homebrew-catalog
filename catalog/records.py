@@ -1,0 +1,221 @@
+"""Offline validation of catalog records under apps/."""
+
+from __future__ import annotations
+
+import json
+import re
+import unicodedata
+from dataclasses import dataclass
+from pathlib import Path
+from urllib.parse import unquote, urlsplit
+
+from .report import Report
+
+FIELDS = (
+    "titleid", "name", "kind", "description", "license", "author",
+    "version", "source_repo", "artifact_url", "sha256", "icon_url",
+)
+KINDS = ("app", "game", "tool")
+MAX_FILE_BYTES = 8192
+MAX_LENGTH = {
+    "titleid": 9, "name": 64, "kind": 4, "description": 200, "license": 64,
+    "author": 64, "version": 32, "source_repo": 200, "artifact_url": 500,
+    "sha256": 64, "icon_url": 500,
+}
+# Title IDs that templates ship with; publishing under them guarantees collisions.
+RESERVED_TITLE_IDS = {"PPSA99999": "the ps5-native-app-boilerplate default"}
+
+TITLE_ID = re.compile(r"[A-Z]{4}[0-9]{5}")
+RECORD_PATH = re.compile(r"apps/[A-Z]{4}[0-9]{5}\.json")
+SHA256 = re.compile(r"[0-9a-f]{64}")
+VERSION = re.compile(r"[0-9A-Za-z][0-9A-Za-z.+_-]*")
+LICENSE = re.compile(r"[A-Za-z0-9.+-]+(?: (?:AND|OR|WITH) [A-Za-z0-9.+-]+)*")
+REPO_PART = re.compile(r"[A-Za-z0-9_.-]+")
+ASSET_NAME = re.compile(r"[^/?#%\s]+\.zip")
+TAG = re.compile(r"[^/?#\s]+")
+ICON_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp")
+# Unicode categories rejected in text: controls, invisible formatting (including
+# bidirectional overrides), surrogates, private use, unassigned, line separators.
+BAD_CATEGORIES = {"Cc", "Cf", "Cs", "Co", "Cn", "Zl", "Zp"}
+
+
+@dataclass(frozen=True)
+class Record:
+    path: Path
+    data: dict
+
+    @property
+    def titleid(self) -> str:
+        return self.data["titleid"]
+
+    @property
+    def owner(self) -> str:
+        return repo_parts(self.data["source_repo"])[0]
+
+    @property
+    def repo(self) -> str:
+        return repo_parts(self.data["source_repo"])[1]
+
+    @property
+    def tag(self) -> str:
+        return release_parts(self.data)[0]
+
+    @property
+    def asset_name(self) -> str:
+        return release_parts(self.data)[1]
+
+
+def repo_parts(source_repo: str) -> tuple[str, str]:
+    owner, repo = urlsplit(source_repo).path.strip("/").split("/")
+    return owner, repo
+
+
+def release_parts(data: dict) -> tuple[str, str]:
+    """Return the (tag, asset name) encoded in a validated artifact_url."""
+    suffix = data["artifact_url"][len(data["source_repo"] + "/releases/download/"):]
+    tag, asset = suffix.split("/")
+    return unquote(tag), asset
+
+
+def _unique_keys(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON key {key!r}")
+        result[key] = value
+    return result
+
+
+def text_problem(value: str) -> str | None:
+    for char in value:
+        if unicodedata.category(char) in BAD_CATEGORIES:
+            return f"contains a disallowed character U+{ord(char):04X}"
+    if unicodedata.normalize("NFC", value) != value:
+        return "is not NFC-normalized Unicode"
+    if value.strip() != value:
+        return "has leading or trailing whitespace"
+    return None
+
+
+def _check_fields(data: dict) -> list[str]:
+    problems = []
+    for field in FIELDS:
+        value = data[field]
+        if not isinstance(value, str):
+            problems.append(f"{field} must be a string")
+            continue
+        if not value:
+            problems.append(f"{field} must not be empty")
+            continue
+        if len(value) > MAX_LENGTH[field]:
+            problems.append(f"{field} is longer than {MAX_LENGTH[field]} characters")
+        issue = text_problem(value)
+        if issue:
+            problems.append(f"{field} {issue}")
+    if problems:
+        return problems
+
+    if not TITLE_ID.fullmatch(data["titleid"]):
+        problems.append("titleid must be four uppercase letters and five digits, e.g. PPSA01234")
+    elif data["titleid"] in RESERVED_TITLE_IDS:
+        problems.append(f"titleid {data['titleid']} is reserved ({RESERVED_TITLE_IDS[data['titleid']]}); "
+                        "choose a unique title ID")
+    if data["kind"] not in KINDS:
+        problems.append(f"kind must be one of: {', '.join(KINDS)}")
+    if not VERSION.fullmatch(data["version"]):
+        problems.append("version may contain only letters, digits and . + _ -")
+    if not LICENSE.fullmatch(data["license"]):
+        problems.append("license must be an SPDX identifier or expression, e.g. GPL-3.0 or MIT OR Apache-2.0")
+    if not SHA256.fullmatch(data["sha256"]):
+        problems.append("sha256 must be 64 lowercase hexadecimal characters")
+
+    source = urlsplit(data["source_repo"])
+    parts = source.path.strip("/").split("/")
+    source_ok = (
+        source.scheme == "https" and source.netloc == "github.com"
+        and source.path == "/" + "/".join(parts) and len(parts) == 2
+        and all(REPO_PART.fullmatch(p) and p not in {".", ".."} for p in parts)
+        and not source.query and not source.fragment
+    )
+    if not source_ok:
+        problems.append("source_repo must be https://github.com/<owner>/<repository>")
+    else:
+        prefix = data["source_repo"] + "/releases/download/"
+        artifact = urlsplit(data["artifact_url"])
+        suffix = data["artifact_url"][len(prefix):] if data["artifact_url"].startswith(prefix) else ""
+        tag, _, asset = suffix.partition("/")
+        if not (suffix and artifact.scheme == "https" and not artifact.query and not artifact.fragment
+                and TAG.fullmatch(tag) and ASSET_NAME.fullmatch(asset)):
+            problems.append("artifact_url must be <source_repo>/releases/download/<tag>/<asset>.zip")
+        elif unquote(tag) == "latest":
+            problems.append("artifact_url must name a specific release tag, not 'latest'")
+
+    icon = urlsplit(data["icon_url"])
+    if not (icon.scheme == "https" and icon.hostname and not icon.username and not icon.password
+            and not icon.fragment and icon.path.lower().endswith(ICON_EXTENSIONS)):
+        problems.append("icon_url must be a direct HTTPS link ending in .png, .jpg, .jpeg or .webp")
+    return problems
+
+
+def load_record(path: Path, report: Report, display: str | None = None) -> Record | None:
+    """Parse and validate one record file; report problems and return None on failure."""
+    name = display or f"apps/{path.name}"
+    if path.is_symlink() or not path.is_file():
+        report.error(name, "must be a regular file")
+        return None
+    if path.stat().st_size > MAX_FILE_BYTES:
+        report.error(name, f"is larger than {MAX_FILE_BYTES} bytes")
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=_unique_keys)
+    except (UnicodeDecodeError, ValueError) as error:
+        report.error(name, f"is not valid UTF-8 JSON: {error}")
+        return None
+    if not isinstance(data, dict):
+        report.error(name, "must contain a single JSON object")
+        return None
+    missing = [f for f in FIELDS if f not in data]
+    extra = sorted(set(data) - set(FIELDS))
+    if missing or extra:
+        if missing:
+            report.error(name, f"missing field(s): {', '.join(missing)}")
+        if extra:
+            report.error(name, f"unexpected field(s): {', '.join(extra)}")
+        return None
+    problems = _check_fields(data)
+    if not problems and path.stem != data["titleid"]:
+        problems.append(f"filename must be {data['titleid']}.json to match titleid")
+    for problem in problems:
+        report.error(name, problem)
+    return None if problems else Record(path, data)
+
+
+def load_catalog(apps_dir: Path, report: Report) -> list[Record]:
+    """Validate every record plus catalog-wide uniqueness rules."""
+    if not apps_dir.is_dir():
+        report.error("apps", "directory is missing")
+        return []
+    records = []
+    for path in sorted(apps_dir.iterdir()):
+        if path.suffix != ".json" or not TITLE_ID.fullmatch(path.stem):
+            report.error(f"apps/{path.name}", "only <TITLEID>.json record files belong in apps/")
+            continue
+        record = load_record(path, report)
+        if record:
+            records.append(record)
+    if not records and not report.failed:
+        report.error("apps", "contains no records")
+
+    for field, label, normalize in (
+        ("name", "name", str.casefold),
+        ("artifact_url", "artifact_url", str),
+        ("sha256", "sha256", str),
+    ):
+        seen: dict[str, str] = {}
+        for record in records:
+            key = normalize(record.data[field])
+            if key in seen:
+                report.error(f"apps/{record.path.name}", f"{label} duplicates {seen[key]}")
+            else:
+                seen[key] = f"apps/{record.path.name}"
+    return records
