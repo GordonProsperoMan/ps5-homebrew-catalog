@@ -66,9 +66,40 @@ One file per app, named after its title ID, with exactly these eleven string fie
 
 Field rules and limits are in **[Metadata format](docs/metadata.md)**.
 
-Not released yet? You can **reserve a title ID** with a short `"status": "coming-soon"`
-record; the website shows it as coming soon. See
-[Reserving a title ID](docs/submitting.md#reserving-a-title-id).
+## Reserve a title ID
+
+Title IDs are first come, first served. If your app isn't released yet, you can
+claim its title ID now; the website shows it as **Coming soon**, with no
+download.
+
+1. Add `apps/<TITLEID>.json` with `"status": "coming-soon"` and seven fields:
+
+   ```json
+   {
+     "titleid": "PPSA01234",
+     "status": "coming-soon",
+     "name": "Example Game",
+     "kind": "game",
+     "description": "One short sentence about the game.",
+     "author": "Example Dev",
+     "source_repo": "https://github.com/example/example-game"
+   }
+   ```
+
+   `icon_url` is optional. The repository may still be private; it identifies
+   who owns the reservation.
+2. Open a pull request from the account that owns `source_repo` (or as a public
+   member of that organization). The checks confirm the account and that the ID
+   is free.
+3. When you release, replace the file with a full [release record](#record-format)
+   (no `status`) in a new pull request from the same account. Nobody else can
+   release or take over your title ID.
+
+Limits that keep reservations fair: at most **5 per publisher**, and a
+reservation left unchanged for **180 days** is flagged by the weekly health
+check and may be released. Details are in
+[Reserving a title ID](docs/submitting.md#reserving-a-title-id) and the
+[review policy](docs/review-policy.md#reservations).
 
 ## What gets checked
 
@@ -77,6 +108,7 @@ record; the website shows it as coming soon. See
 | JSON format, fields, text, URLs, uniqueness | ✓ | ✓ | ✓ |
 | Only `apps/<TITLEID>.json` changed, one app per PR | ✓ | | |
 | Submitter owns the source repository | ✓ | | |
+| Reservation limits (5 per publisher; stale after 180 days) | ✓ | ✓ | ✓ |
 | Release, asset and license exist and match | ✓ | ✓ | ✓ |
 | Downloaded bytes match `sha256` | ✓ | ✓ | ✓ |
 | Icon is a reachable PNG, JPEG or WebP image | ✓ | ✓ | ✓ |
