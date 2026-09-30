@@ -27,6 +27,10 @@ release, and they keep control of it (see [After the merge](#after-the-merge)).
 ## 1. Find candidate apps
 
 Start from what the maintainer gave you: a repository, an account, or a list.
+The daily [discovery job](../automation.md#discovery) also finds candidates
+on its own: apps that pass every automated check arrive as listing pull
+requests (review them with steps 3 and 4), and the rest are listed in the open
+`discovery` issue.
 
 For an account, check every public, non-fork, non-archived repository for a
 release and a `sce_sys/param.json`. Don't rely on GitHub code search: it often

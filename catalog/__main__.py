@@ -138,7 +138,11 @@ def cmd_pr(args) -> int:
     event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8"))
     pull = event["pull_request"]
     author = pull["user"]["login"]
-    maintainer = is_maintainer(pull["author_association"])
+    # A branch in this repository (not a fork) can only be pushed by an account or app with write access,
+    # such as the catalog bot's discovery and update pull requests.
+    head_repo = ((pull.get("head") or {}).get("repo") or {}).get("full_name")
+    same_repository = bool(head_repo) and head_repo == ((pull.get("base") or {}).get("repo") or {}).get("full_name")
+    maintainer = is_maintainer(pull["author_association"]) or same_repository
     report = Report()
     if maintainer:
         report.notice("pull request", f"@{author} is a maintainer; community-only rules are relaxed")
@@ -291,6 +295,65 @@ def cmd_updates(args) -> int:
     return report.emit("Update check", f"{len(found)} update(s) found.")
 
 
+LISTING_BRANCH = "listing/{titleid}"
+
+
+def open_listing_pr(candidate, repository: str, github: GitHub, open_files: dict[str, int]) -> str:
+    """Open a listing pull request for a discovered app; returns what happened, for the report."""
+    from .discover import REJECTED, pull_request_text
+    from .updates import render
+    titleid = candidate.record["titleid"]
+    path = f"apps/{titleid}.json"
+    branch = LISTING_BRANCH.format(titleid=titleid)
+    if path in open_files:
+        return f"#{open_files[path]} already proposes {titleid}"
+    if github.closed_pull_titles(repository, branch):
+        return REJECTED
+    title, body = pull_request_text(candidate, repository)
+    git("fetch", "--quiet", "origin", "main")
+    git("checkout", "--quiet", "-B", branch, "origin/main")
+    try:
+        (APPS / f"{titleid}.json").write_text(render(candidate.record), encoding="utf-8", newline="\n")
+        git("add", path)
+        git("commit", "--quiet", "-m", title)
+        git("push", "--quiet", "--force", "origin", f"{branch}:{branch}")
+    finally:
+        git("checkout", "--quiet", "--detach", "origin/main")
+    pull = github.create_pull(repository, branch, "main", title, body)
+    open_files[path] = pull.get("number")
+    return f"#{pull.get('number')} opened"
+
+
+def cmd_discover(args) -> int:
+    from .discover import MAX_NEW_PULLS, discover, publish, read_ignore, render
+    repository = os.environ.get("GITHUB_REPOSITORY", "")
+    github = GitHub()
+    result = discover(github, APPS, read_ignore(ROOT / "discovery" / "ignore.txt"), own_repo=repository,
+                      max_repos=args.max_repos)
+    ready = sorted((c for c in result.candidates if c.status == "ready"), key=lambda c: c.repo.casefold())
+    if args.open_prs:
+        open_files = github.open_pull_files(repository)
+        opened = 0
+        for candidate in ready:
+            if opened >= MAX_NEW_PULLS:
+                candidate.note = "waiting: this run's pull request limit was reached"
+                continue
+            try:
+                candidate.note = open_listing_pr(candidate, repository, github, open_files)
+            except (GitHubError, subprocess.CalledProcessError) as error:
+                candidate.note = "could not open the pull request"
+                result.warnings.append(f"{candidate.repo}: could not open the pull request: {error}")
+                continue
+            opened += candidate.note.endswith(" opened")
+    if args.issue:
+        print("Discovery report:", publish(GitHub(os.environ["ISSUE_TOKEN"]), repository, result))
+    else:
+        print(render(result, repository=repository or "blackbearreloaded/ps5-homebrew-catalog"))
+    for candidate in ready:
+        print(f"ready: {candidate.repo} {candidate.record['titleid']} {candidate.note}")
+    return 0
+
+
 def cmd_draft(args) -> int:
     from .draft import draft_record, render_draft
     from .updates import render
@@ -383,6 +446,12 @@ def main(argv: list[str] | None = None) -> int:
     updates.add_argument("titleids", nargs="*", help="title IDs to check (default: all)")
     updates.add_argument("--open-prs", action="store_true", help="CI: open or refresh one pull request per update")
     updates.set_defaults(func=cmd_updates)
+
+    discover = commands.add_parser("discover", help="find native PS5 apps on GitHub that aren't listed yet")
+    discover.add_argument("--max-repos", type=int, default=600, help="release lookups per run")
+    discover.add_argument("--open-prs", action="store_true", help="CI: open a listing pull request per ready app")
+    discover.add_argument("--issue", action="store_true", help="CI: rewrite the discovery issue (needs ISSUE_TOKEN)")
+    discover.set_defaults(func=cmd_discover)
 
     pr = commands.add_parser("pr", help="CI: validate the pull request in GITHUB_EVENT_PATH")
     pr.set_defaults(func=cmd_pr)

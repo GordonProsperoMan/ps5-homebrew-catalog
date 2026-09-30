@@ -1,0 +1,6 @@
+# Repositories the daily discovery job (python3 -m catalog discover) never proposes.
+# One owner/repository per line, with the reason after '#'. Maintainers edit this
+# file directly; closing a listing pull request without merging also stops the
+# job from proposing that app again.
+
+blackbearreloaded/ps5-native-app-boilerplate   # template for new apps, not an app

@@ -210,6 +210,11 @@ def _field_set_problems(data: dict) -> list[str]:
     return problems
 
 
+def record_problems(data: dict) -> list[str]:
+    """Every field-level problem with a record's data (catalog-wide rules aside)."""
+    return _field_set_problems(data) or _check_fields(data)
+
+
 def load_record(path: Path, report: Report, display: str | None = None) -> Record | None:
     """Parse and validate one record file; report problems and return None on failure."""
     name = display or f"apps/{path.name}"

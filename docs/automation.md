@@ -9,6 +9,7 @@ library and run by four workflows.
 | [CI](../.github/workflows/ci.yml) | Pull requests and pushes to `main` | Tests, `catalog check` and a website build; on `main` also `catalog push`, then the [website deployment](website.md#deployment) |
 | [Catalog health](../.github/workflows/health.yml) | Daily 06:17 UTC and manual | `catalog health --slice today` |
 | [Release updates](../.github/workflows/updates.yml) | Daily 07:37 UTC and manual | `catalog updates --open-prs` |
+| [Discovery](../.github/workflows/discovery.yml) | Daily 06:53 UTC and manual | `catalog discover --open-prs --issue` |
 
 Results appear as annotations and in each run's job summary.
 
@@ -19,7 +20,10 @@ For a pull request the checker:
 1. **Classifies the changed files.** Community pull requests may only add or
    modify exactly one `apps/<TITLEID>.json`, as a regular, non-executable file.
    Deletions and changes to any other file are reserved for maintainers
-   (`OWNER`, `MEMBER` or `COLLABORATOR` of this repository).
+   (`OWNER`, `MEMBER` or `COLLABORATOR` of this repository). A pull request
+   from a branch of this repository itself, rather than a fork, also counts as
+   a maintainer's: only accounts and apps with write access can push one, such
+   as the catalog bot's discovery and update pull requests.
 2. **Validates the merged catalog.** It applies the PR's records on top of the
    current `main` and checks every record's format plus catalog-wide uniqueness
    of names, artifact URLs and digests. See [Metadata format](metadata.md).
@@ -127,6 +131,42 @@ submission check, so the job acts as a small GitHub App instead.
 
 If the `main` ruleset restricts who may create branches, allow the app to push
 `catalog-update/*` branches.
+
+## Discovery
+
+Every day the [Discovery](../.github/workflows/discovery.yml) workflow searches
+public GitHub for native PS5 apps the catalog doesn't list yet. It only reads
+other repositories: nothing is downloaded and developers aren't contacted.
+
+1. **Find.** Code searches for `sce_sys/param.json` files and build scripts
+   with a `PPSA` title ID (strong signals), README install instructions and
+   mentions of ShadowMountPlus, `.ffpfsc` or `.ffpkg`; repository searches
+   (`ps5 homebrew`, the `ps5` and `ps5-homebrew` topics, `prospero` in the
+   name); and the other repositories of developers who are listed or have a
+   strong signal.
+2. **Skip.** Repositories already listed, title IDs already in the catalog,
+   repositories in [`discovery/ignore.txt`](../discovery/ignore.txt), and apps
+   whose listing pull request is open or was closed without merging.
+3. **Check,** strongest candidates first (600 per run): a published release
+   with a `.zip`, `.ffpkg` or `.ffpfsc` file, then everything
+   `catalog draft` checks.
+4. **Propose.** An app with no blockers, a license GitHub detects and an icon
+   next to its `param.json` gets a listing pull request on `listing/<TITLEID>`
+   from the catalog's GitHub App (at most 10 new ones a run). The job guesses
+   `kind` from keywords and `description` from the repository's About text or
+   README, and says so in the pull request.
+5. **Report.** The open issue labelled `discovery` is rewritten with the pull
+   requests, apps that need review (for example a `param.json` generated at
+   build time) and native projects without a release yet. 🆕 marks
+   repositories new since the previous run.
+
+Review a discovery pull request like any listing: steps 3 and 4 of the
+[listing runbook](maintainers/listing-runbook.md), editing the record on the
+branch if a guess is wrong. Merge it to list the app. Close it without merging
+to reject it; the job won't propose that app again. To stop a repository from
+appearing at all, add it to `discovery/ignore.txt` with a reason. Run
+`python3 -m catalog discover` locally (with `GITHUB_TOKEN` set) to print the
+report without opening anything.
 
 ## Recommended repository settings
 

@@ -36,7 +36,7 @@ class PullRequestCommandTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def open_pr(self, author, association, files):
+    def open_pr(self, author, association, files, head_repo="someone/catalog"):
         """Commit files on a PR branch, publish it as refs/pull/1/head and clone main."""
         self.git("checkout", "-q", "-b", "pr")
         for path, content in files.items():
@@ -50,7 +50,9 @@ class PullRequestCommandTests(unittest.TestCase):
         run(self.origin.parent, "git", "clone", "-q", str(self.origin), str(self.clone))
         event = self.clone.parent / "event.json"
         event.write_text(json.dumps({"pull_request": {
-            "number": 1, "user": {"login": author}, "author_association": association}}), encoding="utf-8")
+            "number": 1, "user": {"login": author}, "author_association": association,
+            "head": {"repo": {"full_name": head_repo}}, "base": {"repo": {"full_name": "owner/catalog"}}}}),
+            encoding="utf-8")
         return event
 
     def run_pr(self, event, commit_author="example"):
@@ -79,6 +81,12 @@ class PullRequestCommandTests(unittest.TestCase):
     def test_stranger_submission_fails_without_verification(self):
         event = self.open_pr("mallory", "NONE", {"apps/PPSA04321.json": self.new_record()})
         self.assertEqual(self.run_pr(event), (1, []))
+
+    def test_branch_in_this_repository_counts_as_maintainer(self):
+        # Only accounts and apps with write access (the catalog bot's discovery job) can push branches here.
+        event = self.open_pr("homebrew-page-bot[bot]", "NONE", {"apps/PPSA04321.json": self.new_record()},
+                             head_repo="owner/catalog")
+        self.assertEqual(self.run_pr(event), (0, ["PPSA04321"]))
 
     def test_pr_cannot_change_validator(self):
         event = self.open_pr("example", "CONTRIBUTOR", {

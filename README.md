@@ -123,6 +123,7 @@ check and may be released. Details are in
 | GitHub's digest of the asset matches `sha256` (nothing downloaded) | ✓ | ✓ | ✓ |
 | Icon is a reachable PNG, JPEG or WebP image | ✓ | ✓ | ✓ |
 | Newer upstream release: daily pull request with the update | | | ✓ |
+| Unlisted native apps on GitHub: daily listing pull requests to review | | | ✓ |
 
 Pushes to `main` verify only the records they change; the daily health check
 covers the whole catalog once a week. Artifacts are never downloaded: the
@@ -173,12 +174,13 @@ or privately as described in [SECURITY.md](SECURITY.md); it will be withdrawn
 
 ```text
 apps/                 One <TITLEID>.json record per app
-catalog/              Checker, verifier and site generator (Python standard library)
+catalog/              Checker, verifier, site generator and discovery job (Python standard library)
+discovery/            Repositories the discovery job never proposes (ignore.txt)
 site/                 Website themes, templates and shared assets
 tests/                Unit and end-to-end tests for the checker
 docs/                 Submission guide, formats, policy, automation, website
 docs/maintainers/     Maintainer runbooks (listing a developer's app, for people and AI agents)
-.github/workflows/    Submission check, CI and deploy, daily health check, release updates
+.github/workflows/    Submission check, CI and deploy, daily health check, release updates, discovery
 ```
 
 ## Run the checks locally

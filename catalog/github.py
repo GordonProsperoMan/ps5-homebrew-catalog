@@ -86,6 +86,40 @@ class GitHub:
         return self._request("GET", f"/repos/{quote(owner)}/{quote(name)}/contents/{quote(path)}"
                                     f"?ref={quote(ref, safe='')}", raw=True)
 
+    # Used only by the discovery job.
+
+    def search(self, kind: str, query: str, page: int = 1, sort: str = "") -> dict:
+        """One page (up to 100 results) of /search/code or /search/repositories."""
+        order = f"&sort={quote(sort)}&order=desc" if sort else ""
+        return self._get(f"/search/{kind}?q={quote(query)}&per_page=100&page={page}{order}") or {}
+
+    def owner_repos(self, owner: str) -> list[dict]:
+        """An account's own public repositories, most recently pushed first."""
+        return self._get(f"/users/{quote(owner)}/repos?type=owner&sort=pushed&per_page=100") or []
+
+    def open_pull_files(self, repository: str) -> dict[str, int]:
+        """Every file path touched by an open pull request, mapped to the pull request's number."""
+        files: dict[str, int] = {}
+        for pull in self._get(f"/repos/{repository}/pulls?state=open&per_page=100") or []:
+            for item in self._get(f"/repos/{repository}/pulls/{pull['number']}/files?per_page=100") or []:
+                files.setdefault(item["filename"], pull["number"])
+        return files
+
+    def open_issue(self, repository: str, label: str) -> dict | None:
+        issues = self._get(f"/repos/{repository}/issues?state=open&labels={quote(label)}&per_page=10") or []
+        return next((i for i in issues if "pull_request" not in i), None)
+
+    def ensure_label(self, repository: str, label: str, color: str, description: str) -> None:
+        if self._get(f"/repos/{repository}/labels/{quote(label)}") is None:
+            self._request("POST", f"/repos/{repository}/labels",
+                          {"name": label, "color": color, "description": description})
+
+    def create_issue(self, repository: str, title: str, body: str, labels: list[str]) -> dict:
+        return self._request("POST", f"/repos/{repository}/issues", {"title": title, "body": body, "labels": labels})
+
+    def update_issue(self, repository: str, number: int, title: str, body: str) -> dict:
+        return self._request("PATCH", f"/repos/{repository}/issues/{number}", {"title": title, "body": body})
+
     # Used only by the update job, with the catalog bot's token.
 
     def open_pull(self, repository: str, head_branch: str) -> dict | None:

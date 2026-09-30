@@ -1,0 +1,66 @@
+name: Discovery
+
+# Daily: searches public GitHub for native PS5 apps the catalog doesn't list
+# yet (see catalog/discover.py). Each app that passes every automated check gets
+# a listing pull request from the catalog's GitHub App on branch
+# listing/<TITLEID>; a maintainer reviews it with the listing runbook and merges
+# it by hand. Apps that need a person first are summarised in the open issue
+# labelled "discovery". Nothing is pushed to main. Does nothing until
+# CATALOG_BOT_CLIENT_ID is set, like the release-update job.
+on:
+  schedule:
+    - cron: '53 6 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: discovery
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    name: Find unlisted native apps
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: catalog-bot
+    permissions:
+      issues: write   # the discovery issue, written with the workflow's own token
+    steps:
+      # Environment variables aren't visible to a job-level `if`, so the check is a step.
+      - id: setup
+        run: |
+          if [ -n "$CLIENT_ID" ]; then echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else echo "::notice::CATALOG_BOT_CLIENT_ID is not set; nothing to do."; fi
+        env:
+          CLIENT_ID: ${{ vars.CATALOG_BOT_CLIENT_ID }}
+      - id: token
+        if: steps.setup.outputs.enabled == 'true'
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.CATALOG_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.CATALOG_BOT_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+      - if: steps.setup.outputs.enabled == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ steps.token.outputs.token }}
+      - if: steps.setup.outputs.enabled == 'true'
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+      - name: Commit as the app
+        if: steps.setup.outputs.enabled == 'true'
+        run: |
+          id="$(gh api "/users/${SLUG}%5Bbot%5D" --jq .id)"
+          git config user.name "${SLUG}[bot]"
+          git config user.email "${id}+${SLUG}[bot]@users.noreply.github.com"
+        env:
+          SLUG: ${{ steps.token.outputs.app-slug }}
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+      - if: steps.setup.outputs.enabled == 'true'
+        run: python3 -m catalog discover --open-prs --issue
+        env:
+          GITHUB_TOKEN: ${{ steps.token.outputs.token }}
+          ISSUE_TOKEN: ${{ github.token }}
