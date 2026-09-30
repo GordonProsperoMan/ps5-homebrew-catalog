@@ -11,6 +11,7 @@ dist/
 ├── _headers, _redirects        Cloudflare Pages security headers, caching, redirects
 ├── 404.html, robots.txt
 ├── index.html                  the catalog: cards, or a compact list (?view=list)
+├── tv/                         TV mode: the catalog as a 10-foot interface
 ├── app/<TITLEID>/              one page per app: download, install steps, sha256
 ├── catalog/v1.json             feed for the console store and other clients
 └── assets/                     content-hashed CSS, JS and WebP icons
@@ -50,6 +51,36 @@ dist/
   copy buttons and card effects.
 - The build fails, and Cloudflare keeps the previous deployment, if any record
   is invalid.
+
+## TV mode
+
+`/tv/` is the catalog as a 10-foot interface for a television, driven by a
+controller or a TV remote: a rail of sections (All, Apps, Games, Tools, Coming
+soon), a grid of large tiles, and a full-screen page per app with the install
+steps, the short link to open on a phone, and the SHA-256.
+
+- **Controls.** The PS5 browser turns the controller into keys: the D-pad
+  moves, ✕ (Enter) opens, ○ (Escape) goes back, △ (F1) changes the sort and □
+  (F2) jumps to the rail. On an app's page, Left and Right step through the
+  apps and Up and Down scroll. The TV remote's channel and track keys work too.
+  Other browsers get the same controls from a connected gamepad (a DualSense
+  over USB or Bluetooth, for example) through the Gamepad API, and the
+  keyboard's arrows, Enter and Escape always work.
+- **Automatic.** TV browsers are sent to TV mode before the regular page is
+  drawn: the PS5 browser and common smart-TV browsers (Tizen, webOS, Android
+  TV, Fire TV and others), recognised by their user agent. An app page opens
+  the same app in TV mode, and catalog filters carry over.
+- **Your choice sticks.** "Exit TV mode" returns to the regular layout and
+  remembers it on that browser (`?layout=web`); the header's "TV mode" link
+  (`?layout=tv`) goes back to the automatic choice. Both links work on any
+  device.
+- **Same data, no extra requests.** The build embeds the catalog in the page
+  as JSON, and `tv.js` draws it with DOM APIs, so metadata is never parsed as
+  HTML. The section, sort and open app live in the URL hash.
+
+TV mode was inspired by [tv4play](https://github.com/ps5-payload-dev/tv4play)
+by ps5-payload-dev, a 10-foot web app for the PS5 whose README documents how
+the console's browser presents the controller.
 
 ## Feed: `catalog/v1.json`
 

@@ -38,7 +38,7 @@ class SiteBuildTests(unittest.TestCase):
         root = self.out
         for path in ("index.html", "app/PPSA01234/index.html", "app/PPSA04321/index.html",
                      "app/PPSA05555/index.html",
-                     "catalog/v1.json", "favicon.svg", "404.html"):
+                     "catalog/v1.json", "favicon.svg", "404.html", "tv/index.html"):
             self.assertTrue((root / path).is_file(), path)
         for path in ("_headers", "_redirects", "404.html", "robots.txt"):
             self.assertTrue((self.out / path).is_file(), path)
@@ -58,6 +58,24 @@ class SiteBuildTests(unittest.TestCase):
             self.assertNotIn("<script>alert", html)
             self.assertNotIn("<b>tags</b>", html)
             self.assertIn("&lt;script&gt;", html)
+
+    def test_tv_mode(self):
+        self.build()
+        html = (self.out / "tv" / "index.html").read_text(encoding="utf-8")
+        # The metadata is data for tv.js; no value can close the JSON <script> element.
+        self.assertNotIn("<script>alert", html)
+        self.assertNotIn("</script>alert", html)
+        raw = html.split('<script type="application/json" id="tv-data">', 1)[1].split("</script>", 1)[0]
+        data = json.loads(raw)
+        by_id = {a["titleid"]: a for a in data["apps"]}
+        self.assertEqual(by_id["PPSA01234"]["name"], "Evil <script>alert(1)</script>")
+        self.assertEqual(by_id["PPSA01234"]["short_url"], "homebrew.page/app/PPSA01234/")
+        self.assertTrue(by_id["PPSA01234"]["steps"][0].startswith("Download PPSA01234.zip"))
+        self.assertTrue(by_id["PPSA05555"]["soon"])
+        self.assertNotIn("sha256", by_id["PPSA05555"])
+        self.assertIn('data-kind="soon"', html)
+        self.assertIn('href="/tv/?layout=tv"', (self.out / "index.html").read_text(encoding="utf-8"))
+        self.assertIn('href="/?layout=web"', html)
 
     def test_feed(self):
         self.build()

@@ -5,6 +5,50 @@
 //   - in-page navigation: opening an app swaps in its static page without a
 //     reload, and going back restores the catalog with filters and scroll intact;
 //   - copy buttons and the card tilt effect.
+// Before any of that, TV browsers (the PS5's included) are sent to TV mode.
+
+// Layout switch. It runs while <head> is parsed, so a TV never draws this page.
+// `?layout=web` keeps this layout from then on (TV mode's "Exit" link sets it);
+// `?layout=tv`, used by the header's TV mode link, returns to automatic choice.
+(function () {
+  "use strict";
+  var TV_BROWSER = /PlayStation 5|SMART-TV|SmartTV|Tizen|Web0S|WebOS|NetCast|BRAVIA|Android TV|GoogleTV|HbbTV|CrKey|AFT[A-Z]/i;
+  var KEY = "catalog-layout";
+  function stored(value) { // read, or write when value is given (null removes); storage may be blocked
+    try {
+      if (value === undefined) return window.localStorage.getItem(KEY);
+      if (value === null) window.localStorage.removeItem(KEY); else window.localStorage.setItem(KEY, value);
+    } catch (error) { /* private mode or disabled storage */ }
+    return null;
+  }
+  try {
+    var params = new URLSearchParams(window.location.search);
+    var forced = params.get("layout");
+    if (forced === "web") stored("web");
+    if (forced === "tv") stored(null);
+    if (forced) {
+      params.delete("layout");
+      var rest = params.toString();
+      window.history.replaceState(window.history.state, "", window.location.pathname + (rest ? "?" + rest : "") + window.location.hash);
+    }
+    var tv = forced ? forced === "tv" : stored() !== "web" && TV_BROWSER.test(navigator.userAgent);
+    var script = document.currentScript;
+    if (!tv || !script) return;
+    var base = new URL(script.src, window.location.href).pathname.replace(/assets\/[^/]*$/, "");
+    var path = window.location.pathname;
+    var app = path.slice(base.length).match(/^app\/([A-Z]{4}[0-9]{5})\/?$/);
+    var state = new URLSearchParams();
+    if (app) state.set("app", app[1]);
+    else if (path === base || path === base + "index.html") {
+      if (/^(app|game|tool)$/.test(params.get("kind") || "")) state.set("kind", params.get("kind"));
+      if (params.get("status") === "soon") state.set("kind", "soon");
+      if (/^(updated|author)$/.test(params.get("sort") || "")) state.set("sort", params.get("sort"));
+    } else return; // other pages (404) stay as they are
+    var hash = state.toString();
+    window.location.replace(base + "tv/" + (hash ? "#" + hash : ""));
+  } catch (error) { /* no URL API: keep this layout */ }
+})();
+
 (function () {
   "use strict";
   var root = document.documentElement;

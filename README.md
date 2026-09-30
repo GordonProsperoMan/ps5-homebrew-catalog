@@ -136,7 +136,8 @@ to run on untrusted pull requests.
 GitHub Actions rebuilds the store from `main` after every merge and deploys it
 to Cloudflare Pages. The catalog
 page switches between cards and a list in place, with shared search, filters
-and sorting; app pages open without reloads; it works on phones, shows when each app was last updated, and publishes a JSON feed at
+and sorting; app pages open without reloads; it works on phones, has a TV mode for the PS5 browser and smart TVs
+(controller-driven, inspired by [tv4play](https://github.com/ps5-payload-dev/tv4play)), shows when each app was last updated, and publishes a JSON feed at
 `/catalog/v1.json` for the console store and other clients. See **[Website](docs/website.md)** for the output, themes, local
 preview and the Cloudflare deployment (no Cloudflare credentials in the
 repository).

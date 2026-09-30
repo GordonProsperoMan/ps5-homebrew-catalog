@@ -29,6 +29,7 @@ import html
 import io
 import json
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -212,6 +213,11 @@ def _install_steps(record: Record) -> str:
     return "\n".join(f"<li>{step}</li>" for step in steps)
 
 
+def _install_steps_text(record: Record) -> list[str]:
+    """The install steps as plain text, for TV mode."""
+    return [html.unescape(re.sub(r"<[^>]+>", "", step)) for step in re.findall(r"<li>(.*?)</li>", _install_steps(record))]
+
+
 def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BASE,
                site_url: str = DEFAULT_SITE_URL, fetch_icons: bool = True,
                theme: str = DEFAULT_THEME, icon_cache: Path | None = None) -> int:
@@ -362,6 +368,41 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
                    canonical=site_url + page_url(record),
                    body=theme_obj.render("app-soon.html" if record.reserved else "app.html", values),
                    og_image=site_url + icons[record.titleid], page_class="page-app")
+
+    # TV mode: a 10-foot interface for the PS5 browser, drawn by tv.js from data embedded in the page.
+    tv_template = theme_obj.template("tv.html")
+    if tv_template:
+        host = site_url.split("://", 1)[-1]
+        tv_apps = []
+        for record in records:
+            d = record.data
+            item = {
+                "titleid": d["titleid"], "name": d["name"], "kind": d["kind"], "kind_label": KIND_LABELS[d["kind"]],
+                "description": d["description"], "author": d["author"], "version": d["version"] or "",
+                "license": d["license"] or "", "soon": record.reserved, "icon": icons[record.titleid],
+                "updated": display_date(updated[record.path.name]) if record.path.name in updated else "",
+                "updated_iso": updated.get(record.path.name, ""), "short_url": host + page_url(record),
+            }
+            if not record.reserved:
+                item.update(format_label=FORMAT_LABELS[artifact_format(record)], sha256=d["sha256"],
+                            artifact_name=unquote(record.asset_name), source=f"{record.owner}/{record.repo}",
+                            steps=_install_steps_text(record))
+            tv_apps.append(item)
+        available = [r for r in records if not r.reserved]
+        rail = [("all", "All", total)] + [(kind, KIND_PLURALS[kind], sum(1 for r in available if r.data["kind"] == kind))
+                                          for kind in KINDS]
+        rail.append(("soon", "Coming soon", total - len(available)))
+        rail_html = "\n".join(f'  <button type="button" class="tv-rail__item" data-kind="{kind}" tabindex="-1">'
+                              f'{label}<span>{count}</span></button>' for kind, label, count in rail if count)
+        data = json.dumps({"apps": tv_apps}, ensure_ascii=False, separators=(",", ":"))
+        (root / "tv").mkdir()
+        (root / "tv" / "index.html").write_text(tv_template.substitute(
+            shared, canonical=e(site_url + base + "tv/"), rail=rail_html,
+            tv_css=assets.add(f"{theme}-tv", "css", (theme_obj.directory / "tv.css").read_bytes()),
+            tv_js=assets.add("tv", "js", (shared_dir / "tv.js").read_bytes()),
+            # Inside <script type="application/json">, "<" is escaped so no value can close the element.
+            data=data.replace("<", "\\u003c"),
+        ), encoding="utf-8")
 
     # 404 page, served by Cloudflare Pages for unknown paths.
     for target in {out / "404.html", root / "404.html"}:
