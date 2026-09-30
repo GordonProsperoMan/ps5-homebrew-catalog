@@ -69,6 +69,11 @@ KIND_WORDS = (
     ("game", re.compile(r"\b(games?|puzzles?|chess|arcade|platformer|shooter|doom|quake|half-life)\b", re.I)),
 )
 MARKDOWN_LINK = re.compile(r"!?\[([^\]]*)\]\([^)]*\)")
+# Release files built for a desktop OS or CPU are tools or libraries, not console titles.
+DESKTOP_BUILD = re.compile(r"(?<![a-z])(linux|windows|win(32|64)|macos|osx|darwin|mac|x86_64|x64|amd64|arm64|"
+                           r"aarch64|x86|i686|portable|setup)(?![a-z])", re.I)
+# A param.json in one of these folders belongs to an example, not to the repository's app.
+SAMPLE_FOLDER = re.compile(r"(^|/)(samples?|examples?|tests?|demos?|templates?|[\w-]*test[\w-]*)/", re.I)
 
 
 @dataclass
@@ -238,6 +243,13 @@ def shorten(text: str, limit: int) -> str:
 def complete(candidate: Candidate, github: GitHub) -> str | None:
     """Fill kind and description with labelled guesses; return why no pull request can be opened, or None."""
     record = dict(candidate.draft.record)
+    file_name = record["artifact_url"].rsplit("/", 1)[-1]
+    if candidate.draft.alternatives:
+        return "the release has several installable files; pick the app's own file by hand"
+    if DESKTOP_BUILD.search(file_name):
+        return f"`{file_name}` looks like a desktop build, not a console title"
+    if SAMPLE_FOLDER.search(candidate.draft.param_path):
+        return f"`{candidate.draft.param_path}` is in a sample or test folder; it may not be the repository's app"
     if not record["license"]:
         return "GitHub detects no license; set it from the README or LICENSE file by hand"
     if not record["icon_url"]:

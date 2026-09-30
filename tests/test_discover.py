@@ -128,6 +128,29 @@ class DiscoverTests(unittest.TestCase):
         self.assertNotIn("[Dev/Player]", body)
         self.assertIn("1 app(s) not shown again", body)
 
+    def test_desktop_builds_and_samples_need_review(self):
+        github = FakeGitHub()
+        github.releases_by_repo["Dev/Player"][0]["assets"] = [dict(ZIP, name="libplayer-linux-arm64.zip")]
+        player = self.run_discover(github)["Dev/Player"]
+        self.assertEqual(player.status, "review")
+        self.assertIn("desktop build", player.draft.blockers[-1])
+        self.assertIsNone(player.record)
+
+    def test_guards_match_what_they_should(self):
+        from catalog.discover import DESKTOP_BUILD, SAMPLE_FOLDER
+        for name in ("tool-win64.zip", "app-linux-x64.zip", "Lib_macOS.zip", "setup.zip", "pkg-x86_64.zip"):
+            self.assertTrue(DESKTOP_BUILD.search(name), name)
+        listed = [json.loads(p.read_text(encoding="utf-8"))["artifact_url"].rsplit("/", 1)[-1]
+                  for p in (Path(__file__).resolve().parents[1] / "apps").glob("*.json")]
+        for name in listed + ["kodi-ps5-PPSA99420-0.8.1.zip", "EVOPlayer-v0.10.0-PPSA99039.ffpfsc"]:
+            if name:
+                self.assertFalse(DESKTOP_BUILD.search(name), name)
+        self.assertTrue(SAMPLE_FOLDER.search("src/HomebrewTest/sce_sys/param.json"))
+        self.assertTrue(SAMPLE_FOLDER.search("samples/cube/sce_sys/param.json"))
+        self.assertFalse(SAMPLE_FOLDER.search("sce_sys/param.json"))
+        self.assertFalse(SAMPLE_FOLDER.search("ps5/sce_sys/param.json"))
+        self.assertFalse(SAMPLE_FOLDER.search("projects/evoplayer/sce_sys/param.json"))
+
     def test_text_helpers(self):
         readme = ("<p align=center><img src=x></p>\n\n# App\n\n[![badge](b)](l)\n\n"
                   "**A media player** for [PS5](https://x).\nSecond line.\n\n## More")

@@ -33,6 +33,7 @@ class Draft:
     todo: list[str] = field(default_factory=list)
     blockers: list[str] = field(default_factory=list)
     alternatives: list[str] = field(default_factory=list)
+    param_path: str = ""
 
 
 def parse_repo(value: str) -> tuple[str, str]:
@@ -117,7 +118,7 @@ def draft_record(repo_value: str, github: GitHub, apps_dir: Path, tag: str | Non
     if not params:
         draft.blockers.append(f"no sce_sys/param.json at {tag}: no evidence this is a native PS5 title")
         return draft
-    param_path = params[0]
+    param_path = draft.param_path = params[0]
     if len(params) > 1:
         draft.todo.append(f"several param.json files {params}; {param_path} was used, confirm it is the app's")
     try:
