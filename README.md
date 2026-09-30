@@ -11,7 +11,7 @@ own GitHub Releases. This repository stores no binaries.
 installs as a title with its own title ID (`eboot.bin` and `sce_sys/`). ELF
 payloads, PS4 packages, backports, emulator ROMs and web pages aren't listed.
 
-The records here are the source of the [PS5 homebrew website](https://homebrew.page/ps5/),
+The records here are the source of the [PS5 homebrew website](https://homebrew.page/),
 and they will feed a console-side store that can install listed apps.
 
 ## How it works
@@ -22,7 +22,7 @@ flowchart TB
     pr["Pull request adds or updates<br/>apps/&lt;TITLEID&gt;.json"]
     checks["Automated checks<br/>publisher · release · sha256 · icon"]
     review["Maintainer review and merge"]
-    site["homebrew.page/ps5<br/>website + JSON feed"]
+    site["homebrew.page<br/>website + JSON feed"]
     user["User downloads straight from<br/>the developer's release, verified by sha256"]
 
     dev --> pr --> checks --> review --> site --> user
@@ -136,7 +136,7 @@ GitHub Actions rebuilds the store from `main` after every merge and deploys it
 to Cloudflare Pages. The catalog
 page switches between cards and a list in place, with shared search, filters
 and sorting; app pages open without reloads; it works on phones, shows when each app was last updated, and publishes a JSON feed at
-`/ps5/catalog/v1.json` for the console store and other clients. See **[Website](docs/website.md)** for the output, themes, local
+`/catalog/v1.json` for the console store and other clients. See **[Website](docs/website.md)** for the output, themes, local
 preview and the Cloudflare deployment (no Cloudflare credentials in the
 repository).
 

@@ -65,7 +65,7 @@ jobs:
     timeout-minutes: 15
     environment:
       name: cloudflare-pages
-      url: https://homebrew.page/ps5/
+      url: https://homebrew.page/
     concurrency:
       group: deploy-cloudflare-pages
       cancel-in-progress: false

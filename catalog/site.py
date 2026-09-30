@@ -1,12 +1,12 @@
 """Build the static store website and JSON feed from apps/.
 
-Output (for the default base path /ps5/):
+Output (for the default base path /):
 
     dist/_headers, dist/_redirects, dist/404.html, dist/robots.txt
-    dist/ps5/index.html                 the catalog, as cards or a list (?view=list)
-    dist/ps5/app/<TITLEID>/index.html   one page per app
-    dist/ps5/catalog/v1.json            machine-readable feed
-    dist/ps5/assets/…                   content-hashed CSS, JS and icons
+    dist/index.html                     the catalog, as cards or a list (?view=list)
+    dist/app/<TITLEID>/index.html       one page per app
+    dist/catalog/v1.json                machine-readable feed
+    dist/assets/…                       content-hashed CSS, JS and icons
 
 Each theme under site/themes/<name>/ provides base.html, index.html (the
 catalog in both views), toolbar.html (its filters), card.html and row.html (one
@@ -43,7 +43,9 @@ ROOT = Path(__file__).resolve().parents[1]
 SITE = ROOT / "site"
 REPO_URL = "https://github.com/blackbearreloaded/ps5-homebrew-catalog"
 DEFAULT_SITE_URL = "https://homebrew.page"
-DEFAULT_BASE = "/ps5/"
+DEFAULT_BASE = "/"
+# Base paths the site used to be served under; their URLs redirect to the current base.
+LEGACY_BASES = ("/ps5/",)
 MARKER = ".catalog-site"
 FEED_SCHEMA = 1
 ICON_SIZE = 512
@@ -405,10 +407,13 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
   Access-Control-Allow-Origin: *
   Cache-Control: public, max-age=300, must-revalidate
 """, encoding="utf-8")
-    if base != "/":
-        (out / "_redirects").write_text(
-            f"/ {base} 302\n{base.rstrip('/')} {base} 301\n"
-            f"{base}list {base}?view=list 301\n{base}list/ {base}?view=list 301\n"
-            f"/favicon.ico {base}favicon.svg 301\n", encoding="utf-8")
+    redirects = [f"/ {base} 302", f"{base.rstrip('/')} {base} 301"] if base != "/" else []
+    redirects += [f"{base}list {base}?view=list 301", f"{base}list/ {base}?view=list 301",
+                  f"/favicon.ico {base}favicon.svg 301"]
+    for old in LEGACY_BASES:
+        if old != base:
+            redirects += [f"{old}list {base}?view=list 301", f"{old}list/ {base}?view=list 301",
+                          f"{old.rstrip('/')} {base} 301", f"{old}* {base}:splat 301"]
+    (out / "_redirects").write_text("\n".join(redirects) + "\n", encoding="utf-8")
     (out / "robots.txt").write_text("User-agent: *\nAllow: /\n", encoding="utf-8")
     return total

@@ -35,7 +35,7 @@ class SiteBuildTests(unittest.TestCase):
     def test_builds_pages_feed_and_config(self):
         count, report = self.build()
         self.assertEqual((count, report.failed), (3, False))
-        root = self.out / "ps5"
+        root = self.out
         for path in ("index.html", "app/PPSA01234/index.html", "app/PPSA04321/index.html",
                      "app/PPSA05555/index.html",
                      "catalog/v1.json", "favicon.svg", "404.html"):
@@ -43,13 +43,17 @@ class SiteBuildTests(unittest.TestCase):
         for path in ("_headers", "_redirects", "404.html", "robots.txt"):
             self.assertTrue((self.out / path).is_file(), path)
         redirects = (self.out / "_redirects").read_text(encoding="utf-8")
-        self.assertIn("/ /ps5/ 302", redirects)
-        self.assertIn("/ps5/list/ /ps5/?view=list 301", redirects)
+        self.assertNotIn("/ / 302", redirects)
+        self.assertIn("/list/ /?view=list 301", redirects)
+        # Links from when the site lived under /ps5/ keep working.
+        self.assertIn("/ps5/list/ /?view=list 301", redirects)
+        self.assertIn("/ps5 / 301", redirects)
+        self.assertIn("/ps5/* /:splat 301", redirects)
         self.assertFalse((root / "list").exists())
 
     def test_metadata_is_escaped(self):
         self.build()
-        for page in (self.out / "ps5" / "index.html", self.out / "ps5" / "app" / "PPSA01234" / "index.html"):
+        for page in (self.out / "index.html", self.out / "app" / "PPSA01234" / "index.html"):
             html = page.read_text(encoding="utf-8")
             self.assertNotIn("<script>alert", html)
             self.assertNotIn("<b>tags</b>", html)
@@ -57,19 +61,19 @@ class SiteBuildTests(unittest.TestCase):
 
     def test_feed(self):
         self.build()
-        feed = json.loads((self.out / "ps5" / "catalog" / "v1.json").read_text(encoding="utf-8"))
+        feed = json.loads((self.out / "catalog" / "v1.json").read_text(encoding="utf-8"))
         self.assertEqual(feed["schema"], 1)
         self.assertEqual(feed["source"]["commit"], "abc1234def")
         self.assertEqual([a["titleid"] for a in feed["apps"]], ["PPSA01234", "PPSA04321"])
         self.assertEqual([a["format"] for a in feed["apps"]], ["zip", "ffpkg"])
-        self.assertTrue(feed["apps"][0]["page"].endswith("/ps5/app/PPSA01234/"))
+        self.assertTrue(feed["apps"][0]["page"].endswith("homebrew.page/app/PPSA01234/"))
         self.assertEqual([a["titleid"] for a in feed["coming_soon"]], ["PPSA05555"])
         self.assertIsNone(feed["coming_soon"][0]["artifact_url"])
         self.assertIsNone(feed["coming_soon"][0]["source_repo"])
 
     def test_reservation_pages(self):
         self.build()
-        root = self.out / "ps5"
+        root = self.out
         page = (root / "app" / "PPSA05555" / "index.html").read_text(encoding="utf-8")
         self.assertIn("Not released yet", page)
         self.assertNotIn("rel=\"nofollow\"", page)
@@ -80,23 +84,23 @@ class SiteBuildTests(unittest.TestCase):
 
     def test_catalog_page_holds_both_views_and_filters(self):
         self.build()
-        html = (self.out / "ps5" / "index.html").read_text(encoding="utf-8")
+        html = (self.out / "index.html").read_text(encoding="utf-8")
         self.assertEqual(html.count('class="lrow '), 3)
         self.assertEqual(html.count('class="card-item"'), 3)
         self.assertEqual(html.count("data-grid"), 2)
         for hook in ("data-search", "data-status-filter", "data-format-filter", "data-sort",
-                     'data-view-button="cards"', 'data-view-button="list"', 'data-base="/ps5/"'):
+                     'data-view-button="cards"', 'data-view-button="list"', 'data-base="/"'):
             self.assertIn(hook, html)
 
     def test_feed_is_minified(self):
         self.build()
-        text = (self.out / "ps5" / "catalog" / "v1.json").read_text(encoding="utf-8")
+        text = (self.out / "catalog" / "v1.json").read_text(encoding="utf-8")
         self.assertEqual(text.count("\n"), 1)
 
     def test_install_steps_follow_format(self):
         self.build()
-        zip_page = (self.out / "ps5" / "app" / "PPSA01234" / "index.html").read_text(encoding="utf-8")
-        image_page = (self.out / "ps5" / "app" / "PPSA04321" / "index.html").read_text(encoding="utf-8")
+        zip_page = (self.out / "app" / "PPSA01234" / "index.html").read_text(encoding="utf-8")
+        image_page = (self.out / "app" / "PPSA04321" / "index.html").read_text(encoding="utf-8")
         self.assertIn("extract it", zip_page)
         self.assertIn("Copy the file as-is", image_page)
 
@@ -105,7 +109,7 @@ class SiteBuildTests(unittest.TestCase):
             with self.subTest(theme=theme):
                 count, report = self.build(theme=theme)
                 self.assertEqual(count, 3)
-                html = (self.out / "ps5" / "index.html").read_text(encoding="utf-8")
+                html = (self.out / "index.html").read_text(encoding="utf-8")
                 self.assertNotIn("$", html.replace("$ ", ""))
 
     def test_invalid_catalog_builds_nothing(self):
