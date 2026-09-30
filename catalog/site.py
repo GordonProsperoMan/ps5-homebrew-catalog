@@ -117,6 +117,11 @@ def display_date(iso: str) -> str:
     return f"{months[int(month) - 1]} {int(day)}, {year}"
 
 
+def version_label(version: str) -> str:
+    """How a version is shown: "v1.2" for numeric versions, tags such as "vk-285-113" as they are."""
+    return f"v{version}" if version[:1].isdigit() else version
+
+
 def normalize_base(base: str) -> str:
     base = "/" + base.strip("/") + "/"
     return "/" if base == "//" else base
@@ -282,6 +287,7 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
                 format=e(fmt),
                 format_label=e(FORMAT_LABELS[fmt]),
                 artifact_name=e(unquote(record.asset_name)),
+                version_label=e(version_label(d["version"])),
                 release_url=e(f"{d['source_repo']}/releases/tag/{d['artifact_url'].split('/releases/download/')[1].split('/')[0]}"),
                 tag=e(record.tag),
             )
@@ -379,6 +385,7 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
             item = {
                 "titleid": d["titleid"], "name": d["name"], "kind": d["kind"], "kind_label": KIND_LABELS[d["kind"]],
                 "description": d["description"], "author": d["author"], "version": d["version"] or "",
+                "version_label": version_label(d["version"]) if d["version"] else "",
                 "license": d["license"] or "", "soon": record.reserved, "icon": icons[record.titleid],
                 "updated": display_date(updated[record.path.name]) if record.path.name in updated else "",
                 "updated_iso": updated.get(record.path.name, ""), "short_url": host + page_url(record),

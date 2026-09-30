@@ -59,6 +59,12 @@ class SiteBuildTests(unittest.TestCase):
             self.assertNotIn("<b>tags</b>", html)
             self.assertIn("&lt;script&gt;", html)
 
+    def test_version_label(self):
+        from catalog.site import version_label
+        self.assertEqual(version_label("01.000.005"), "v01.000.005")
+        self.assertEqual(version_label("vk-285-113"), "vk-285-113")
+        self.assertEqual(version_label("v1.0"), "v1.0")
+
     def test_tv_mode(self):
         self.build()
         html = (self.out / "tv" / "index.html").read_text(encoding="utf-8")

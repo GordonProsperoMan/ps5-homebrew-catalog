@@ -110,7 +110,8 @@ img { display: block; }
 
 /* Grid */
 
-.tv-main { grid-area: main; min-height: 0; overflow-y: auto; scroll-behavior: smooth; scrollbar-width: none; padding: 0.6rem 1.2rem 2rem 0.6rem; margin: -0.6rem -1.2rem 0 -0.6rem; }
+/* The padding leaves room for the focused tile's scale and ring, which the scroll box would clip. */
+.tv-main { grid-area: main; min-height: 0; overflow-y: auto; scroll-behavior: smooth; scrollbar-width: none; padding: 1.5rem 1.5rem 2rem; margin: -1.5rem -1.5rem 0; }
 .tv-main::-webkit-scrollbar { display: none; }
 .tv-heading { margin: 0 0 1.1rem; font: 800 2rem/1.1 var(--display); letter-spacing: -0.03em; }
 .tv-grid { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 1.6rem 1.3rem; }

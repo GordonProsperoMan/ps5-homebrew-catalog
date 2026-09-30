@@ -94,7 +94,7 @@
     art.appendChild(make("span", "tv-tile__badge" + (app.soon ? " tv-tile__badge--soon" : ""), app.soon ? "Soon" : app.kind_label));
     item.appendChild(art);
     item.appendChild(make("p", "tv-tile__name", app.name));
-    item.appendChild(make("p", "tv-tile__meta", app.soon ? app.author : app.author + " · v" + app.version));
+    item.appendChild(make("p", "tv-tile__meta", app.soon ? app.author : app.author + " · " + app.version_label));
     app.node = item;
     return item;
   }
