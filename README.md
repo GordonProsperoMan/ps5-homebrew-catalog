@@ -18,23 +18,40 @@ and they will feed a console-side store that can install listed apps.
 
 ```mermaid
 flowchart TB
-    dev["Developer publishes .zip, .ffpfsc or .ffpkg<br/>in their own GitHub Release"]
-    pr["Pull request adds or updates<br/>apps/&lt;TITLEID&gt;.json"]
-    checks["Automated checks<br/>publisher · release · sha256 · icon"]
-    review["Maintainer review and merge"]
-    site["homebrew.page<br/>website + JSON feed"]
-    user["User downloads straight from<br/>the developer's release, verified by sha256"]
+    release["Developer publishes a GitHub release tagged with the app's version<br/>with a .zip, .ffpfsc or .ffpkg attached"]
 
-    dev --> pr --> checks --> review --> site --> user
-    dev -. artifact_url .-> user
+    subgraph prs["One pull request per app, for its apps/TITLEID.json record"]
+        direction LR
+        dev["Developer<br/>lists, updates or reserves their app"]
+        discovery["Discovery job, daily<br/>proposes unlisted native apps it finds on GitHub"]
+        updates["Release updates job, daily<br/>proposes each listed app's newest release"]
+    end
+
+    checks["Automated checks<br/>format · publisher · release and tag · sha256 from GitHub's digest · icon"]
+    review["Maintainer reviews and merges"]
+    site["homebrew.page, rebuilt from main<br/>cards and list · TV mode · JSON feed"]
+    user["User downloads straight from the developer's release,<br/>verified by sha256"]
+    health["Health check, daily<br/>re-verifies listed releases, all of them each week"]
+
+    release --> dev & discovery & updates
+    dev & discovery & updates --> checks
+    checks --> review --> site --> user
+    release -. artifact_url .-> user
+    health -. reports broken listings .-> review
 ```
 
 1. A developer publishes a GitHub release of their project, tagged with the app's
    version, with the app attached.
-2. They open a pull request that adds or updates `apps/<TITLEID>.json`.
-3. Automation verifies the record, the publisher, the release, the exact bytes
-   (sha256), and the icon.
-4. A maintainer reviews and merges; the website and feed are rebuilt from `main`.
+2. A pull request adds or updates `apps/<TITLEID>.json`. It comes from the
+   developer, or from one of two daily jobs: **discovery**, which searches public
+   GitHub for native apps that aren't listed yet, and **release updates**, which
+   moves listed apps to their newest release.
+3. Automation verifies the record, the publisher, the release and its tag, the
+   exact bytes (sha256, from GitHub's digest; nothing is downloaded), and the icon.
+4. A maintainer reviews and merges; nothing is listed automatically. The website
+   (cards, list and TV mode) and the feed are rebuilt from `main`.
+5. A daily health check re-verifies the listed releases (the whole catalog each
+   week) and reports any that broke.
 
 Downloads always come from the developer's own release, pinned by sha256, so a
 listed app can't be silently replaced.
