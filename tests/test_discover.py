@@ -140,8 +140,9 @@ class DiscoverTests(unittest.TestCase):
         from catalog.discover import DESKTOP_BUILD, SAMPLE_FOLDER
         for name in ("tool-win64.zip", "app-linux-x64.zip", "Lib_macOS.zip", "setup.zip", "pkg-x86_64.zip"):
             self.assertTrue(DESKTOP_BUILD.search(name), name)
-        listed = [json.loads(p.read_text(encoding="utf-8"))["artifact_url"].rsplit("/", 1)[-1]
-                  for p in (Path(__file__).resolve().parents[1] / "apps").glob("*.json")]
+        urls = [json.loads(p.read_text(encoding="utf-8"))["artifact_url"]
+                for p in (Path(__file__).resolve().parents[1] / "apps").glob("*.json")]
+        listed = [url.rsplit("/", 1)[-1] for url in urls if url]   # reservations have no file yet
         for name in listed + ["kodi-ps5-PPSA99420-0.8.1.zip", "EVOPlayer-v0.10.0-PPSA99039.ffpfsc"]:
             if name:
                 self.assertFalse(DESKTOP_BUILD.search(name), name)
