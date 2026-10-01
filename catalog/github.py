@@ -133,6 +133,16 @@ class GitHub:
                           f"&head={quote(owner)}:{quote(head_branch)}") or []
         return [p.get("title", "") for p in pulls if not p.get("merged_at")]
 
+    def closed_pull_bodies(self, repository: str, head_branch: str) -> list[str]:
+        """Bodies of the branch's recent pull requests that were closed without merging."""
+        owner = repository.split("/")[0]
+        pulls = self._get(f"/repos/{repository}/pulls?state=closed&per_page=30"
+                          f"&head={quote(owner)}:{quote(head_branch)}") or []
+        return [p.get("body") or "" for p in pulls if not p.get("merged_at")]
+
+    def close_pull(self, repository: str, number: int) -> dict:
+        return self._request("PATCH", f"/repos/{repository}/pulls/{number}", {"state": "closed"})
+
     def create_pull(self, repository: str, head: str, base: str, title: str, body: str) -> dict:
         return self._request("POST", f"/repos/{repository}/pulls",
                              {"head": head, "base": base, "title": title, "body": body})

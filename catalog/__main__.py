@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -195,13 +196,14 @@ def cmd_pr(args) -> int:
                                              "a maintainer will review it.")
 
 
-UPDATE_BRANCH = "catalog-update/{titleid}"
+UPDATE_BRANCH = "catalog-update/all"
+# The pull request body records which release it proposes for each app, so a later run can tell what was rejected.
+UPDATE_STATE = re.compile(r"<!-- catalog-updates: (\{.*?\}) -->")
 
 
-def update_pr_text(update) -> tuple[str, str]:
+def update_section(update) -> str:
     from .records import release_parts
     old, new = update.record.data, update.data
-    title = f"Update {new['name']} to {new['version']}"
     old_tag, old_asset = release_parts(old)
     new_tag, new_asset = release_parts(new)
     repo = old["source_repo"]
@@ -213,55 +215,104 @@ def update_pr_text(update) -> tuple[str, str]:
         ("sha256", f"`{old['sha256']}`", f"`{new['sha256']}` (GitHub's digest)"),
         ("Icon", old["icon_url"], new["icon_url"] if new["icon_url"] != old["icon_url"] else "unchanged"),
     ]
-    body = "\n".join([
-        f"Automated update from the daily release check for `{new['titleid']}` ({repo}).",
+    return "\n".join([
+        f"### {new['name']} (`{new['titleid']}`): {old['version']} → {new['version']}",
+        "",
+        f"From {repo}.",
         "",
         "| | Listed | Proposed |",
         "| --- | --- | --- |",
         *[f"| {label} | {a} | {b} |" for label, a, b in rows],
+        *([""] + [f"- {note}" for note in update.notes] if update.notes else []),
+    ])
+
+
+def updates_pr_text(updates: list) -> tuple[str, str]:
+    """Title and body of the one pull request that carries every pending update."""
+    names = [f"{u.data['name']} to {u.data['version']}" for u in updates]
+    if len(names) == 1:
+        title = f"Update {names[0]}"
+    else:
+        shown = ", ".join(names[:3]) + (f" and {len(names) - 3} more" if len(names) > 3 else "")
+        title = f"Update {len(names)} apps: {shown}"
+    state = json.dumps({u.record.titleid: u.tag for u in updates}, sort_keys=True)
+    body = "\n".join([
+        f"Automated updates from the daily release check: {len(updates)} app(s) have a newer release.",
         "",
-        *[f"- {note}" for note in update.notes],
+        *[update_section(u) + "\n" for u in updates],
+        "The submission check verifies every record in this pull request. Merge it to publish the updates. "
+        "Closing it without merging skips these versions: none of them is proposed again, and each app "
+        "comes back with its next release.",
         "",
-        "The submission check verifies this pull request like any other. Merge it to publish the update, "
-        "or close it to skip this version.",
+        f"<!-- catalog-updates: {state} -->",
     ])
     return title, body
 
 
-def open_update_pr(update, repository: str, github: GitHub, report: Report) -> None:
-    from .updates import render
-    name = f"apps/{update.record.path.name}"
-    branch = UPDATE_BRANCH.format(titleid=update.record.titleid)
-    title, body = update_pr_text(update)
-    content = render(update.data)
-    if title in github.closed_pull_titles(repository, branch):
-        report.notice(name, f"skipped: a pull request titled {title!r} was closed without merging")
-        return
-    existing = github.open_pull(repository, branch)
-    if existing:
-        git("fetch", "--quiet", "origin", f"+refs/heads/{branch}:refs/remotes/origin/{branch}")
+def rejected_updates(repository: str, github: GitHub) -> set[tuple[str, str]]:
+    """(title ID, tag) pairs of update pull requests that were closed without merging."""
+    rejected = set()
+    for body in github.closed_pull_bodies(repository, UPDATE_BRANCH):
+        match = UPDATE_STATE.search(body)
+        if not match:
+            continue
         try:
-            current = git("show", f"origin/{branch}:apps/{update.record.path.name}")
-        except subprocess.CalledProcessError:
-            current = ""
-        if current == content:
-            report.notice(name, f"pull request #{existing['number']} already proposes this update")
-            return
+            rejected.update(json.loads(match.group(1)).items())
+        except ValueError:
+            continue
+    return rejected
+
+
+def open_updates_pr(updates: list, repository: str, github: GitHub, report: Report) -> None:
+    """Keep one pull request, on one branch, with every pending update; rebuild it when the set changes."""
+    from .updates import render
+    rejected = rejected_updates(repository, github)
+    kept = []
+    for update in updates:
+        if (update.record.titleid, update.tag) in rejected:
+            report.notice(f"apps/{update.record.path.name}",
+                          f"skipped: an update to {update.tag} was closed without merging")
+        else:
+            kept.append(update)
+    existing = github.open_pull(repository, UPDATE_BRANCH)
+    if not kept:
+        if existing:
+            # Its updates reached main some other way. The marker is dropped so closing it rejects nothing.
+            github.update_pull(repository, existing["number"], existing.get("title", "Update apps"),
+                               "Closed by the release check: there is nothing left to update.")
+            github.close_pull(repository, existing["number"])
+            report.notice("updates", f"closed pull request #{existing['number']}: nothing left to update")
+        return
+
+    title, body = updates_pr_text(kept)
+    contents = {f"apps/{u.record.path.name}": render(u.data) for u in kept}
     git("fetch", "--quiet", "origin", "main")
-    git("checkout", "--quiet", "-B", branch, "origin/main")
+    if existing:
+        git("fetch", "--quiet", "origin", f"+refs/heads/{UPDATE_BRANCH}:refs/remotes/origin/{UPDATE_BRANCH}")
+        changed = git("diff", "--name-only", "origin/main", f"origin/{UPDATE_BRANCH}").split()
+        try:
+            same = sorted(changed) == sorted(contents) and all(
+                git("show", f"origin/{UPDATE_BRANCH}:{path}") == content for path, content in contents.items())
+        except subprocess.CalledProcessError:
+            same = False
+        if same:
+            report.notice("updates", f"pull request #{existing['number']} already proposes these updates")
+            return
+    git("checkout", "--quiet", "-B", UPDATE_BRANCH, "origin/main")
     try:
-        (APPS / update.record.path.name).write_text(content, encoding="utf-8", newline="\n")
-        git("add", f"apps/{update.record.path.name}")
+        for path, content in contents.items():
+            (ROOT / path).write_text(content, encoding="utf-8", newline="\n")
+            git("add", path)
         git("commit", "--quiet", "-m", title)
-        git("push", "--quiet", "--force", "origin", f"{branch}:{branch}")
+        git("push", "--quiet", "--force", "origin", f"{UPDATE_BRANCH}:{UPDATE_BRANCH}")
     finally:
         git("checkout", "--quiet", "--detach", "origin/main")
     if existing:
         github.update_pull(repository, existing["number"], title, body)
-        report.notice(name, f"updated pull request #{existing['number']}: {title}")
+        report.notice("updates", f"updated pull request #{existing['number']}: {title}")
     else:
-        pull = github.create_pull(repository, branch, "main", title, body)
-        report.notice(name, f"opened pull request #{pull.get('number')}: {title}")
+        pull = github.create_pull(repository, UPDATE_BRANCH, "main", title, body)
+        report.notice("updates", f"opened pull request #{pull.get('number')}: {title}")
 
 
 def cmd_updates(args) -> int:
@@ -287,11 +338,10 @@ def cmd_updates(args) -> int:
             report.warning(name, reason)
     if args.open_prs:
         repository = os.environ["GITHUB_REPOSITORY"]
-        for update in found:
-            try:
-                open_update_pr(update, repository, github, report)
-            except (GitHubError, subprocess.CalledProcessError) as error:
-                report.error(f"apps/{update.record.path.name}", f"could not open the pull request: {error}")
+        try:
+            open_updates_pr(found, repository, github, report)
+        except (GitHubError, subprocess.CalledProcessError) as error:
+            report.error("updates", f"could not open the pull request: {error}")
     return report.emit("Update check", f"{len(found)} update(s) found.")
 
 

@@ -20,11 +20,11 @@ and they will feed a console-side store that can install listed apps.
 flowchart TB
     release["Developer publishes a GitHub release tagged with the app's version<br/>with a .zip, .ffpfsc or .ffpkg attached"]
 
-    subgraph prs["One pull request per app, for its apps/TITLEID.json record"]
+    subgraph prs["Pull requests that add or change apps/TITLEID.json records"]
         direction LR
         dev["Developer<br/>lists, updates or reserves their app"]
         discovery["Discovery job, daily<br/>proposes unlisted native apps it finds on GitHub"]
-        updates["Release updates job, daily<br/>proposes each listed app's newest release"]
+        updates["Release updates job, daily<br/>one pull request with every newer release"]
     end
 
     checks["Automated checks<br/>format · publisher · release and tag · sha256 from GitHub's digest · icon"]
@@ -44,8 +44,9 @@ flowchart TB
    version, with the app attached.
 2. A pull request adds or updates `apps/<TITLEID>.json`. It comes from the
    developer, or from one of two daily jobs: **discovery**, which searches public
-   GitHub for native apps that aren't listed yet, and **release updates**, which
-   moves listed apps to their newest release.
+   GitHub for native apps that aren't listed yet (one pull request per app), and
+   **release updates**, which moves listed apps to their newest release (all in
+   one pull request).
 3. Automation verifies the record, the publisher, the release and its tag, the
    exact bytes (sha256, from GitHub's digest; nothing is downloaded), and the icon.
 4. A maintainer reviews and merges; nothing is listed automatically. The website

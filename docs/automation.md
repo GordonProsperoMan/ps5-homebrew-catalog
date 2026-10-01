@@ -84,9 +84,11 @@ how broken listings are handled.
 ## Release updates
 
 Every day the [Release updates](../.github/workflows/updates.yml) workflow asks
-GitHub for the newest release of every listed app, pre-releases included. For
-each app with a newer release it opens, or refreshes, one pull request on the
-branch `catalog-update/<TITLEID>`, authored by the catalog's GitHub App:
+GitHub for the newest release of every listed app, pre-releases included. All
+the apps with a newer release go into **one pull request**, on the branch
+`catalog-update/all`, authored by the catalog's GitHub App. While it is open,
+each run rebuilds it from `main` with the current set of updates, so it never
+goes stale. For each app:
 
 - **File:** the release asset with the same file type that is the listed file's
   successor: the same name, the same name with the new version, or the only
@@ -98,9 +100,12 @@ branch `catalog-update/<TITLEID>`, authored by the catalog's GitHub App:
 - **Icon:** a tag-pinned `icon_url` moves to the new tag if the icon exists
   there; otherwise it stays as it is.
 
-The pull request shows the old and new values side by side, and the normal
-submission check runs on it. Merge it to publish the update. If you close it
-without merging, that version isn't proposed again; the next release is. Run
+The pull request shows each app's old and new values side by side, and the
+normal submission check verifies every record in it. Merge it to publish the
+updates. If you close it without merging, none of the versions in it is
+proposed again; each app comes back with its next release. To publish some
+updates and skip others, revert the unwanted record on the branch before
+merging; that app is proposed again on the next run. Run
 `python3 -m catalog updates` locally to see what would be proposed.
 
 ### Setting up the GitHub App (once)
@@ -130,7 +135,7 @@ submission check, so the job acts as a small GitHub App instead.
 5. **Test it:** **Actions → Release updates → Run workflow**.
 
 If the `main` ruleset restricts who may create branches, allow the app to push
-`catalog-update/*` branches.
+`catalog-update/all` branch.
 
 ## Discovery
 

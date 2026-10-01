@@ -131,47 +131,97 @@ class BumpPolicyTests(unittest.TestCase):
         self.assertTrue(report.failed)
 
 
+OTHER = record(
+    titleid="PPSA04321", name="Other App", version="1.0", sha256="b" * 64,
+    source_repo="https://github.com/example/other-app",
+    artifact_url="https://github.com/example/other-app/releases/download/1.0/other-PPSA04321.zip",
+    icon_url="https://raw.githubusercontent.com/example/other-app/1.0/sce_sys/icon0.png",
+)
+
+
 class OpenPullRequestTests(unittest.TestCase):
+    """One pull request, on one branch, carries every pending update."""
+
     def run_git(self, cwd, *args):
         return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True).stdout
 
-    def test_opens_then_skips_an_identical_update(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            origin, clone = root / "origin", root / "clone"
-            origin.mkdir()
-            self.run_git(origin, "init", "-q", "-b", "main")
-            self.run_git(origin, "config", "user.email", "t@example.com")
-            self.run_git(origin, "config", "user.name", "T")
-            self.run_git(origin, "config", "receive.denyCurrentBranch", "ignore")
-            write_record(origin / "apps", OLD)
-            self.run_git(origin, "add", ".")
-            self.run_git(origin, "commit", "-q", "-m", "base")
-            self.run_git(root, "clone", "-q", str(origin), str(clone))
-            self.run_git(clone, "config", "user.email", "bot@example.com")
-            self.run_git(clone, "config", "user.name", "Bot")
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        root = Path(self.tmp.name)
+        self.origin, self.clone = root / "origin", root / "clone"
+        self.origin.mkdir()
+        self.run_git(self.origin, "init", "-q", "-b", "main")
+        self.run_git(self.origin, "config", "user.email", "t@example.com")
+        self.run_git(self.origin, "config", "user.name", "T")
+        self.run_git(self.origin, "config", "receive.denyCurrentBranch", "ignore")
+        write_record(self.origin / "apps", OLD)
+        write_record(self.origin / "apps", OTHER)
+        self.run_git(self.origin, "add", ".")
+        self.run_git(self.origin, "commit", "-q", "-m", "base")
+        self.run_git(root, "clone", "-q", str(self.origin), str(self.clone))
+        self.run_git(self.clone, "config", "user.email", "bot@example.com")
+        self.run_git(self.clone, "config", "user.name", "Bot")
 
-            old = Record(clone / "apps" / "PPSA01234.json", OLD)
-            github = FakeGitHub([release("v0.6.0", [asset("example-0.6.0-PPSA01234.zip")])])
-            update, _ = find_update(old, github, icon_exists=lambda url: True)
-            created, open_pr = [], {}
-            github.closed_pull_titles = lambda repo, branch: []
-            github.open_pull = lambda repo, branch: open_pr.get(branch)
-            github.create_pull = lambda repo, head, base, title, body: created.append((head, title)) or {"number": 7}
-            github.update_pull = lambda *args: self.fail("identical update should not be refreshed")
+        first, _ = find_update(Record(self.clone / "apps" / "PPSA01234.json", OLD),
+                               FakeGitHub([release("v0.6.0", [asset("example-0.6.0-PPSA01234.zip")])]),
+                               icon_exists=lambda url: True)
+        second, _ = find_update(Record(self.clone / "apps" / "PPSA04321.json", OTHER),
+                                FakeGitHub([release("2.0", [asset("other-PPSA04321.zip", "sha256:" + "d" * 64)])]),
+                                icon_exists=lambda url: True)
+        self.updates = [first, second]
+        self.created, self.updated, self.closed, self.open_pr, self.rejected_bodies = [], [], [], {}, []
+        self.github = mock.Mock(
+            open_pull=lambda repo, branch: self.open_pr.get(branch),
+            closed_pull_bodies=lambda repo, branch: self.rejected_bodies,
+            create_pull=lambda repo, head, base, title, body: self.created.append((head, title, body)) or {"number": 7},
+            update_pull=lambda repo, number, title, body: self.updated.append((number, title, body)),
+            close_pull=lambda repo, number: self.closed.append(number),
+        )
 
-            with mock.patch.object(cli, "ROOT", clone), mock.patch.object(cli, "APPS", clone / "apps"):
-                report = Report()
-                cli.open_update_pr(update, "example/catalog", github, report)
-                self.assertEqual(created, [("catalog-update/PPSA01234", "Update Example App to 0.6.0")])
-                pushed = self.run_git(origin, "show", "catalog-update/PPSA01234:apps/PPSA01234.json")
-                self.assertEqual(json.loads(pushed)["version"], "0.6.0")
-                self.assertEqual(json.loads((clone / "apps" / "PPSA01234.json").read_text())["version"], "0.5.0")
+    def open(self, updates):
+        report = Report()
+        with mock.patch.object(cli, "ROOT", self.clone), mock.patch.object(cli, "APPS", self.clone / "apps"):
+            cli.open_updates_pr(updates, "example/catalog", self.github, report)
+        return [item[2] for item in report.items]
 
-                open_pr["catalog-update/PPSA01234"] = {"number": 7}
-                report = Report()
-                cli.open_update_pr(update, "example/catalog", github, report)
-                self.assertIn("already proposes", report.items[-1][2])
+    def pushed(self, titleid):
+        return json.loads(self.run_git(self.origin, "show", f"catalog-update/all:apps/{titleid}.json"))
+
+    def test_all_updates_share_one_pull_request(self):
+        self.open(self.updates)
+        (head, title, body), = self.created
+        self.assertEqual((head, title), ("catalog-update/all", "Update 2 apps: Example App to 0.6.0, Other App to 2.0"))
+        self.assertEqual((self.pushed("PPSA01234")["version"], self.pushed("PPSA04321")["version"]), ("0.6.0", "2.0"))
+        self.assertIn("### Example App (`PPSA01234`): 0.5.0 → 0.6.0", body)
+        self.assertIn('<!-- catalog-updates: {"PPSA01234": "v0.6.0", "PPSA04321": "2.0"} -->', body)
+        # The working tree is back on main, untouched.
+        self.assertEqual(json.loads((self.clone / "apps" / "PPSA01234.json").read_text())["version"], "0.5.0")
+
+    def test_identical_run_changes_nothing_and_a_new_update_refreshes_it(self):
+        self.open(self.updates[:1])
+        self.assertEqual(self.created[0][1], "Update Example App to 0.6.0")
+        self.open_pr["catalog-update/all"] = {"number": 7, "title": "Update Example App to 0.6.0"}
+        self.assertIn("already proposes", self.open(self.updates[:1])[-1])
+        self.assertEqual(self.updated, [])
+        self.open(self.updates)
+        self.assertEqual([(n, t) for n, t, _ in self.updated], [(7, "Update 2 apps: Example App to 0.6.0, Other App to 2.0")])
+        self.assertEqual(self.pushed("PPSA04321")["version"], "2.0")
+
+    def test_versions_closed_without_merging_are_not_proposed_again(self):
+        self.rejected_bodies = ['x <!-- catalog-updates: {"PPSA01234": "v0.6.0"} --> y', "no marker"]
+        notes = self.open(self.updates)
+        self.assertIn("skipped: an update to v0.6.0 was closed without merging", notes)
+        self.assertEqual(self.created[0][1], "Update Other App to 2.0")
+        self.assertEqual(self.run_git(self.clone, "diff", "--name-only", "origin/main", "origin/catalog-update/all").split(),
+                         ["apps/PPSA04321.json"])
+
+    def test_stale_pull_request_is_closed_without_rejecting_anything(self):
+        self.open_pr["catalog-update/all"] = {"number": 7, "title": "Update Example App to 0.6.0"}
+        self.open([])
+        self.assertEqual(self.closed, [7])
+        self.assertNotIn("catalog-updates:", self.updated[0][2])
+        self.assertEqual(self.created, [])
 
 
 if __name__ == "__main__":
