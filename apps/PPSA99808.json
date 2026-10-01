@@ -1,0 +1,13 @@
+{
+  "titleid": "PPSA99808",
+  "name": "PICO-8 for PS5",
+  "kind": "app",
+  "description": "Unofficial loader that runs your own copy of the PICO-8 Linux build as a native PS5 app.",
+  "license": null,
+  "author": "RafaelNGP",
+  "version": null,
+  "source_repo": null,
+  "artifact_url": null,
+  "sha256": null,
+  "icon_url": null
+}
