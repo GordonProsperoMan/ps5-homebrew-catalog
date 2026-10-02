@@ -267,7 +267,7 @@ icon, as for any other file, at the cost of one request per icon.
 | `schema` | Date | Change |
 | --- | --- | --- |
 | 1 | 2026-10-02 | First version: `versions.json`, `index.json`, `apps/<TITLEID>.json`, PNG icons. |
-| 2 | 2026-10-03 | Added `icon_hash` to app files and index entries, so clients can cache icons without requests. |
+| 2 | 2026-10-02 | Added `icon_hash` to app files and index entries, so clients can cache icons without requests. |
 
 ## Where the values come from
 
