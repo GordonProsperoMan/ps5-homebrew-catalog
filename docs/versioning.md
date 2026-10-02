@@ -95,3 +95,7 @@ Neither of these blocks a listing; they are there so you notice.
 3. Tag that commit and publish the GitHub release with the artifact attached.
 4. The catalog's daily update job proposes the new release; nothing else to do
    (see [Updating your app](submitting.md#updating-your-app)).
+
+To have your app tell its own users about a new release, add the
+[update check](https://github.com/blackbearreloaded/ps5-native-app-boilerplate/blob/main/docs/UPDATE_CHECK.md): two files that ask the catalog and compare content
+versions.

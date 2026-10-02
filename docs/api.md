@@ -203,6 +203,11 @@ Do this in the background, at most once per launch, and never make the app
 wait for it or fail because of it: the catalog may be unreachable, and the
 user may be offline.
 
+**Ready-made:** the [update check](https://github.com/blackbearreloaded/ps5-native-app-boilerplate/blob/main/docs/UPDATE_CHECK.md) in `ps5-native-app-boilerplate` is
+these four steps as two files (`update_check.h` and `update_check.c`) that you
+copy into your project. It uses the console's own HTTPS with certificate
+verification, needs no elevation, and has been run on a PS5 against this API.
+
 ### A store checking what is installed
 
 0. Verify the catalog first ([Verifying the catalog](#verifying-the-catalog)).
