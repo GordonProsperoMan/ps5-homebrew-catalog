@@ -575,6 +575,9 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
 {base}api/*
   Access-Control-Allow-Origin: *
   Cache-Control: public, max-age=300, must-revalidate
+
+{base}api/*/manifest.sig
+  Content-Type: application/octet-stream
 """, encoding="utf-8")
     redirects = [f"/ {base} 302", f"{base.rstrip('/')} {base} 301"] if base != "/" else []
     redirects += [f"{base}list {base}?view=list 301", f"{base}list/ {base}?view=list 301",

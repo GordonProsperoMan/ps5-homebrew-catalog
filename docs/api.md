@@ -308,6 +308,9 @@ icon, as for any other file, at the cost of one request per icon.
 
 - **HTTPS only**, `GET` only. No key, no account, no rate limit to negotiate;
   be considerate anyway.
+- **Name your client.** Send a `User-Agent` such as `MyApp/01.000.000`. The
+  CDN in front of the site refuses the default agents of some HTTP libraries
+  (Python's `urllib`, for one) with `403`.
 - **Caching.** Responses carry an `ETag` and
   `Cache-Control: public, max-age=300, must-revalidate`. Keep the `ETag` with
   your copy and send it back as `If-None-Match`; an unchanged file answers
