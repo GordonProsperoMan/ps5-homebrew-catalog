@@ -84,6 +84,12 @@ All of these must hold (see the [scope rule](../review-policy.md#maintainer-revi
 | Not a payload, PS4 package, backport, ROM or web page | no `.elf`/`.bin` payload as the main file, no `CUSA` title ID, README describes a native title |
 | It's the developer's own project | not a mirror or repackage of someone else's app; the README credits upstream work rather than claiming it |
 
+Also note the app's `contentVersion` (the draft's facts and `verify` show it).
+It doesn't decide the listing, but say in the pull request when it is missing
+or looks never to have been raised (`01.000.000` on a later release): consoles
+find updates by comparing it, so such an app can be installed from the catalog
+but won't show updates ([App versions](../versioning.md)).
+
 If the repository contains several `sce_sys/param.json` files (the draft says
 so), use the one at the repository root or in the folder the README says is
 the app, and ignore vendored examples.

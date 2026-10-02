@@ -191,7 +191,7 @@ def cmd_pr(args) -> int:
             check_publisher(author, maintainer, old, new, github, report,
                             holder=holder_of(new.path.name) if old and old.reserved else None, held=held)
             if report.count("error") == before:
-                verify_record(new, github, report)
+                verify_record(new, github, report, previous=old)
     return report.emit("Pull request check", "The submission meets every automated requirement; "
                                              "a maintainer will review it.")
 
@@ -337,7 +337,16 @@ def cmd_updates(args) -> int:
         elif reason not in ("up to date", "reservation"):
             report.warning(name, reason)
     if args.open_prs:
+        from . import facts
         repository = os.environ["GITHUB_REPOSITORY"]
+        for update in found:
+            try:
+                old_version, _ = facts.find_content_version(update.record, github)
+                new_version, _ = facts.find_content_version(Record(update.record.path, update.data), github)
+            except GitHubError:
+                continue
+            update.notes.append(facts.update_note(facts.Facts(content_version=old_version),
+                                                  facts.Facts(content_version=new_version)))
         try:
             open_updates_pr(found, repository, github, report)
         except (GitHubError, subprocess.CalledProcessError) as error:
@@ -428,7 +437,8 @@ def cmd_build(args) -> int:
     report = Report()
     count = build_site(Path(args.out), APPS, report, base=args.base, site_url=args.site_url,
                        fetch_icons=not args.no_icons, theme=args.theme,
-                       icon_cache=Path(args.icon_cache) if args.icon_cache else None)
+                       icon_cache=Path(args.icon_cache) if args.icon_cache else None,
+                       github=None if args.no_icons else GitHub())
     return report.emit("Site build", f"Built {count} app page(s) into {args.out}.")
 
 
@@ -481,8 +491,8 @@ def main(argv: list[str] | None = None) -> int:
     build.add_argument("--base", default=DEFAULT_BASE, help="URL path the site is served under")
     build.add_argument("--site-url", default=DEFAULT_SITE_URL, help="origin used for absolute URLs")
     build.add_argument("--theme", default=DEFAULT_THEME, choices=sorted(THEMES))
-    build.add_argument("--no-icons", action="store_true", help="skip fetching icons (placeholders)")
-    build.add_argument("--icon-cache", help="directory that keeps fetched icons between builds")
+    build.add_argument("--no-icons", action="store_true", help="offline build: no icons (placeholders) and no release facts in the API")
+    build.add_argument("--icon-cache", help="directory that keeps fetched icons and release facts between builds")
     build.set_defaults(func=cmd_build)
 
     draft = commands.add_parser("draft", help="draft a record for a repository (no downloads, no writes to GitHub)")

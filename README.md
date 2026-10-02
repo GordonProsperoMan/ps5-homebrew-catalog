@@ -29,7 +29,7 @@ flowchart TB
 
     checks["Automated checks<br/>format · publisher · release and tag · sha256 from GitHub's digest · icon"]
     review["Maintainer reviews and merges"]
-    site["homebrew.page, rebuilt from main<br/>cards and list · TV mode · JSON feed"]
+    site["homebrew.page, rebuilt from main<br/>cards and list · TV mode · store API"]
     user["User downloads straight from the developer's release,<br/>verified by sha256"]
     health["Health check, daily<br/>re-verifies listed releases, all of them each week"]
 
@@ -50,7 +50,8 @@ flowchart TB
 3. Automation verifies the record, the publisher, the release and its tag, the
    exact bytes (sha256, from GitHub's digest; nothing is downloaded), and the icon.
 4. A maintainer reviews and merges; nothing is listed automatically. The website
-   (cards, list and TV mode) and the feed are rebuilt from `main`.
+   (cards, list and TV mode) and the [store API](docs/api.md) are rebuilt from
+   `main`.
 5. A daily health check re-verifies the listed releases (the whole catalog each
    week) and reports any that broke.
 
@@ -140,6 +141,7 @@ check and may be released. Details are in
 | Release, asset and license exist and match | ✓ | ✓ | ✓ |
 | GitHub's digest of the asset matches `sha256` (nothing downloaded) | ✓ | ✓ | ✓ |
 | Icon is a reachable PNG, JPEG or WebP image | ✓ | ✓ | ✓ |
+| Content version (`contentVersion`) readable and raised; warning only | ✓ | ✓ | ✓ |
 | Newer upstream release: daily pull request with the update | | | ✓ |
 | Unlisted native apps on GitHub: daily listing pull requests to review | | | ✓ |
 
@@ -155,10 +157,23 @@ GitHub Actions rebuilds the store from `main` after every merge and deploys it
 to Cloudflare Pages. The catalog
 page switches between cards and a list in place, with shared search, filters
 and sorting; app pages open without reloads; it works on phones, has a TV mode for the PS5 browser and smart TVs
-(controller-driven, inspired by [tv4play](https://github.com/ps5-payload-dev/tv4play)), shows when each app was last updated, and publishes a JSON feed at
-`/catalog/v1.json` for the console store and other clients. See **[Website](docs/website.md)** for the output, themes, local
+(controller-driven, inspired by [tv4play](https://github.com/ps5-payload-dev/tv4play)), and shows when each app was last updated. See **[Website](docs/website.md)** for the output, themes, local
 preview and the Cloudflare deployment (no Cloudflare credentials in the
 repository).
+
+## Store API
+
+The same build publishes the catalog for programs at
+`https://homebrew.page/api/v1/`: one small JSON file per app, a compact index, a
+version map and PNG icons. It is what a console store reads, and what an app
+reads to tell its user that an update exists. Besides the records it carries
+each release's download size, release date and content version, all read from
+GitHub without downloading anything.
+
+- **[Store API](docs/api.md)**: the files, every field, how to find updates,
+  and how the API is versioned.
+- **[App versions](docs/versioning.md)**: for developers, the `contentVersion`
+  standard that makes updates visible to consoles.
 
 ## Trust and safety
 
@@ -197,7 +212,7 @@ catalog/              Checker, verifier, site generator and discovery job (Pytho
 discovery/            Repositories the discovery job never proposes (ignore.txt)
 site/                 Website themes, templates and shared assets
 tests/                Unit and end-to-end tests for the checker
-docs/                 Submission guide, formats, policy, automation, website
+docs/                 Submission guide, formats, versions, store API, policy, automation, website
 docs/maintainers/     Maintainer runbooks (listing a developer's app, for people and AI agents)
 .github/workflows/    Submission check, CI and deploy, daily health check, release updates, discovery
 ```

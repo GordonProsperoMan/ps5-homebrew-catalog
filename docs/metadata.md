@@ -13,7 +13,7 @@ only [reservations](#reservations-coming-soon) use `null`.
 | `description` | 200 | One short plain-text sentence. No Markdown or HTML; it is displayed as text. |
 | `license` | 64 | SPDX identifier or expression (`GPL-3.0`, `MIT OR Apache-2.0`). Must agree with the license GitHub detects for `source_repo`. |
 | `author` | 64 | Developer or publisher name, as you want it credited. |
-| `version` | 32 | Version shown to users: the release tag in `artifact_url`, optionally without a leading `v` (tag `v0.2.0-alpha.1` → `0.2.0-alpha.1`). Letters, digits and `. + _ -`. |
+| `version` | 32 | Version shown to users: the release tag in `artifact_url`, optionally without a leading `v` (tag `v0.2.0-alpha.1` → `0.2.0-alpha.1`). Letters, digits and `. + _ -`. Consoles find updates with the release's `contentVersion` instead, which the catalog reads from your repository; see [App versions](versioning.md). |
 | `source_repo` | 200 | `https://github.com/<owner>/<repository>`, using GitHub's exact capitalization. Must be public. |
 | `artifact_url` | 500 | `<source_repo>/releases/download/<tag>/<asset>` for a published release; the asset ends in `.zip`, `.ffpfsc` or `.ffpkg`. Moving links such as `/releases/latest/download/` are rejected. Unique across the catalog. |
 | `sha256` | 64 | SHA-256 of the artifact as 64 lowercase hex characters. Unique across the catalog. |
@@ -53,7 +53,12 @@ spoofed and keeps records safe to render anywhere.
 
 ## Why these fields
 
-The record carries only what the website and the console store need to show an
-app and to install one exact, verified release. Release history, sizes and
-compatibility notes stay in the developer's repository. The sha256 is what ties
-a reviewed listing to the bytes users download.
+The record carries only what a person has to state and a maintainer has to
+review: what the app is, and which exact file is listed. The sha256 is what
+ties a reviewed listing to the bytes users download.
+
+Everything a machine can read for itself stays out of the record. The download
+size, the release date and the content version are added to the
+[store API](api.md) by the build, from GitHub and from the app's repository, so
+they can't disagree with the release. Release history and compatibility notes
+stay in the developer's repository.

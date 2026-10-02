@@ -7,13 +7,14 @@ exact bytes; a replaced asset gets a new digest and stops matching.
 
 from __future__ import annotations
 
-from . import artifacts
+from . import artifacts, facts
 from .github import GitHub, GitHubError
 from .records import Record
 from .report import Report
 
 
-def verify_record(record: Record, github: GitHub, report: Report) -> None:
+def verify_record(record: Record, github: GitHub, report: Report, previous: Record | None = None) -> None:
+    """Check a record online. `previous` is the record it replaces, when a pull request changes a listing."""
     name = f"apps/{record.path.name}"
     data = record.data
     if record.reserved:
@@ -52,11 +53,30 @@ def verify_record(record: Record, github: GitHub, report: Report) -> None:
             report.error(name, f"sha256 does not match the release asset; GitHub reports {github_digest}")
             return
         report.notice(name, f"release asset matches sha256 ({asset.get('size', 0):,} bytes, not downloaded)")
+        _check_content_version(name, record, previous, github, report)
     except GitHubError as error:
         report.error(name, str(error))
         return
 
     _verify_icon(name, data["icon_url"], report)
+
+
+def _check_content_version(name: str, record: Record, previous: Record | None, github: GitHub,
+                           report: Report) -> None:
+    """Consoles find updates by comparing content versions (docs/api.md); warn when they can't."""
+    version, where = facts.find_content_version(record, github)
+    if version is None:
+        report.warning(name, "no contentVersion found for this release (no sce_sys/param.json for this title at "
+                             "the tag): consoles can't check this app for updates")
+        return
+    report.notice(name, f"contentVersion {version} (from {where})")
+    if previous is None or previous.reserved or previous.data["sha256"] == record.data["sha256"]:
+        return
+    listed, _ = facts.find_content_version(previous, github)
+    old_key, new_key = facts.content_version_key(listed), facts.content_version_key(version)
+    if old_key and new_key <= old_key:
+        report.warning(name, f"contentVersion {version} is not higher than the listed release's {listed}: "
+                             "consoles won't see this release as an update")
 
 
 def _verify_reservation(name: str, record: Record, github: GitHub, report: Report) -> None:

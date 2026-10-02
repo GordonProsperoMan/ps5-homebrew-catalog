@@ -13,7 +13,8 @@ dist/
 ├── index.html                  the catalog: cards, or a compact list (?view=list)
 ├── tv/                         TV mode: the catalog as a 10-foot interface
 ├── app/<TITLEID>/              one page per app: download, install steps, sha256
-├── catalog/v1.json             feed for the console store and other clients
+├── api/v1/                     the store API: per-app files, index, versions, PNG icons
+├── catalog/v1.json             the older single-file feed
 └── assets/                     content-hashed CSS, JS and WebP icons
 ```
 
@@ -82,7 +83,23 @@ TV mode was inspired by [tv4play](https://github.com/ps5-payload-dev/tv4play)
 by ps5-payload-dev, a 10-foot web app for the PS5 whose README documents how
 the console's browser presents the controller.
 
-## Feed: `catalog/v1.json`
+## Store API: `api/v1/`
+
+The build publishes the catalog as static JSON for the console store, for apps
+that check themselves for updates, and for other clients: one file per app, a
+compact index, a version map, and PNG icons. **[Store API](api.md)** is its
+specification, including how clients find updates and how the API is versioned.
+
+Besides the records, it carries each release's download size, release date and
+content version. They come from GitHub's API and from the `param.json` in the
+app's repository; no artifact is downloaded. Each belongs to one exact file, so
+it is looked up once and kept in the build's cache next to the icons. An
+offline build (`--no-icons`) leaves them `null`.
+
+## Older feed: `catalog/v1.json`
+
+The first feed, kept for clients that already use it. New clients should use
+the [store API](api.md).
 
 ```json
 {
@@ -103,11 +120,10 @@ the console's browser presents the controller.
 }
 ```
 
-The feed is minified. `apps` holds only installable releases, so a client can install anything in it;
-reservations are listed separately in `coming_soon`. Both are sorted by title
-ID. `updated` is `null` when the history isn't available. The feed is served with
-`Access-Control-Allow-Origin: *` and a five-minute cache. A breaking change
-gets a new path (`v2.json`); `v1.json` keeps working.
+The feed is minified. `apps` holds only installable releases; reservations are
+listed separately in `coming_soon`. Both are sorted by title ID. `updated` is
+`null` when the history isn't available. The feed is served with
+`Access-Control-Allow-Origin: *` and a five-minute cache.
 
 ## Design
 
@@ -126,7 +142,7 @@ python3 -m http.server --directory dist 8000
 ```
 
 Open <http://localhost:8000/>. Useful options: `--no-icons` (offline,
-placeholders), `--base /path/` (serve under a sub-path), `--site-url` (origin used in the
+placeholders, and no release facts in the API), `--base /path/` (serve under a sub-path), `--site-url` (origin used in the
 feed and canonical links), `--out`.
 
 ## Deployment

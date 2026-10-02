@@ -5,6 +5,7 @@ from pathlib import Path
 from unittest import mock
 
 from catalog.report import Report
+from catalog import site
 from catalog.site import THEMES, build_site
 
 from helpers import record, reservation, write_record
@@ -29,7 +30,8 @@ class SiteBuildTests(unittest.TestCase):
     def build(self, **options):
         report = Report()
         with mock.patch.dict("os.environ", {"CF_PAGES_COMMIT_SHA": "abc1234def"}):
-            count = build_site(self.out, self.apps, report, fetch_icons=False, **options)
+            options.setdefault("fetch_icons", False)
+            count = build_site(self.out, self.apps, report, **options)
         return count, report
 
     def test_builds_pages_feed_and_config(self):
@@ -64,6 +66,51 @@ class SiteBuildTests(unittest.TestCase):
         self.assertEqual(version_label("01.000.005"), "v01.000.005")
         self.assertEqual(version_label("vk-285-113"), "vk-285-113")
         self.assertEqual(version_label("v1.0"), "v1.0")
+
+    def test_api(self):
+        self.build()
+        api = self.out / "api" / "v1"
+        app = json.loads((api / "apps" / "PPSA01234.json").read_text(encoding="utf-8"))
+        self.assertEqual((app["schema"], app["status"], app["format"], app["artifact_name"], app["tag"]),
+                         (1, "available", "zip", "PPSA01234.zip", "01.000.000"))
+        self.assertEqual(app["sha256"], "a" * 64)                      # every record field is there
+        self.assertEqual(app["page"], "https://homebrew.page/app/PPSA01234/")
+        self.assertEqual(app["release_url"], "https://github.com/example/example-app/releases/tag/01.000.000")
+        # An offline build knows no release facts and has no icons; the fields are present and null.
+        self.assertEqual([app[k] for k in ("size", "released", "prerelease", "content_version", "icon", "icon_small")],
+                         [None] * 6)
+        soon = json.loads((api / "apps" / "PPSA05555.json").read_text(encoding="utf-8"))
+        self.assertEqual((soon["status"], soon["artifact_url"], soon["format"], soon["tag"]),
+                         ("coming_soon", None, None, None))
+        index = json.loads((api / "index.json").read_text(encoding="utf-8"))
+        self.assertEqual((index["schema"], index["count"], index["commit"]), (1, 3, "abc1234def"))
+        self.assertEqual([a["titleid"] for a in index["apps"]], ["PPSA01234", "PPSA04321", "PPSA05555"])
+        self.assertNotIn("description", index["apps"][0])
+        versions = json.loads((api / "versions.json").read_text(encoding="utf-8"))
+        self.assertEqual(versions, {"schema": 1, "apps": {
+            "PPSA01234": {"content_version": None, "version": "01.000.000"},
+            "PPSA04321": {"content_version": None, "version": "2"}}})
+        self.assertIn("/api/*\n  Access-Control-Allow-Origin: *", (self.out / "_headers").read_text(encoding="utf-8"))
+
+    def test_api_release_facts_and_icons(self):
+        from catalog import facts as facts_module
+        known = facts_module.Facts(size=4096, released="2026-09-01T10:00:00Z", prerelease=False,
+                                   content_version="01.000.000", param_path="sce_sys/param.json")
+        png = b"\x89PNG\r\n\x1a\n\x00\x00\x00\x0dIHDR" + (512).to_bytes(4, "big") * 2
+        with mock.patch.object(site, "_icon", lambda url, cache: (png, "png", png)), \
+                mock.patch.object(site, "png_icons", lambda data: {512: b"large", 256: b"small"}), \
+                mock.patch.object(facts_module, "cached", lambda record, github, cache, fetch=None:
+                                  (facts_module.Facts(), None) if record.reserved else (known, None)):
+            self.build(fetch_icons=True, github=object())
+        api = self.out / "api" / "v1"
+        app = json.loads((api / "apps" / "PPSA01234.json").read_text(encoding="utf-8"))
+        self.assertEqual((app["size"], app["released"], app["prerelease"], app["content_version"]),
+                         (4096, "2026-09-01T10:00:00Z", False, "01.000.000"))
+        self.assertEqual(app["icon"], "https://homebrew.page/api/v1/icons/PPSA01234.png")
+        self.assertEqual(app["icon_small"], "https://homebrew.page/api/v1/icons/PPSA01234-256.png")
+        self.assertEqual((api / "icons" / "PPSA01234-256.png").read_bytes(), b"small")
+        versions = json.loads((api / "versions.json").read_text(encoding="utf-8"))
+        self.assertEqual(versions["apps"]["PPSA01234"], {"content_version": "01.000.000", "version": "01.000.000"})
 
     def test_tv_mode(self):
         self.build()

@@ -24,6 +24,9 @@ the maintainer review.
 ## Recommendations
 
 - Name the asset after the title ID, e.g. `PPSA01234.zip`.
+- Raise `contentVersion` in `sce_sys/param.json` with every release and keep
+  that file in your repository; it is how consoles find updates
+  ([App versions](versioning.md)).
 - Use the same title ID as `titleId` in `sce_sys/param.json`, and keep the
   title ID, `conceptId` and `contentId` stable across releases so updates keep
   the app's data.

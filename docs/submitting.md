@@ -16,6 +16,10 @@ then reviews and merges it.
   attached to it. Pre-releases are accepted; files in the repository, drafts,
   CI artifacts and other download sites aren't. The release tag **is** the
   version the catalog shows.
+- A **`contentVersion` you raise in every release**, in `sce_sys/param.json`
+  in your repository, in the PlayStation format (`01.000.070`). It isn't
+  required for a listing, but it is how a console knows an installed copy is
+  outdated; see [App versions](versioning.md).
 - A **title ID** no other listed app uses.
 - A **square icon** (PNG, JPEG or WebP, 256×256 or larger, at most 2 MiB) at a
   stable HTTPS URL. Your `sce_sys/icon0.png` in the repository works well.
@@ -47,6 +51,11 @@ app's version: the record's `version` must be that tag, or the tag without a
 leading `v` (tag `v1.2.0` → version `1.2.0` or `v1.2.0`; tag `01.000.005` →
 version `01.000.005`). Don't use generic or moving tags such as `latest`,
 `nightly` or `release`.
+
+Before you build, raise `contentVersion` in `sce_sys/param.json` and commit
+it, so the tag points at the value the release ships. Tagging releases with
+the content version itself (`01.000.005`) keeps everything in one number.
+[App versions](versioning.md) has the rules and a release checklist.
 
 Use a new tag and a new asset for every version; never replace the asset of a
 release that is already listed, because its sha256 would no longer match. Enabling GitHub's
@@ -150,8 +159,9 @@ new pull request from the same account. That account must also own the
 Usually nothing to do: the catalog checks for new releases every day and opens
 a pull request that moves your listing to the newest one (pre-releases
 included). For that to work, keep your asset name stable, or change only the
-version inside it (`example-0.5.0.zip` → `example-0.6.0.zip`), and pin
-`icon_url` to a tag. You can also update yourself: publish a new release, then
+version inside it (`example-0.5.0.zip` → `example-0.6.0.zip`), pin
+`icon_url` to a tag, and raise `contentVersion` in every release so consoles
+see it as an update ([App versions](versioning.md)). You can also update yourself: publish a new release, then
 open a pull request that edits your record's `version`, `artifact_url`,
 `sha256` and, if needed, `icon_url`. The same
 ownership rule applies: only the owner of the listed repository can update it.
@@ -169,6 +179,8 @@ your repository.
 | `sha256 does not match` | Recompute the digest of the exact asset in `artifact_url`. |
 | `artifact_url must be` | Link a specific release asset ending in `.zip`, `.ffpfsc` or `.ffpkg`. |
 | `version must match the release tag` | Set `version` to the tag in `artifact_url`, optionally without its leading `v`. |
+| `no contentVersion found` (warning) | Commit `sce_sys/param.json` with your `titleId` and a `contentVersion` like `01.000.070`, or tag releases with the content version. See [App versions](versioning.md). |
+| `contentVersion … is not higher` (warning) | Raise `contentVersion` in every release; consoles compare it to find updates. |
 | `license ... does not match` | Use the SPDX identifier GitHub shows for your repository. |
 | `name duplicates` | Another app already uses that name; choose a distinct one. |
 | `canonical URL` | Match the repository's exact owner/name capitalization. |

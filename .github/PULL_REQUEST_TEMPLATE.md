@@ -9,5 +9,6 @@
 - [ ] The artifact is a `.zip`, `.ffpfsc` or `.ffpkg` ([artifact formats](https://github.com/blackbearreloaded/ps5-homebrew-catalog/blob/main/docs/artifact-formats.md)) whose app uses this title ID.
 - [ ] For a release: the artifact is attached to a published GitHub release, and `version` is that release's tag (optionally without a leading `v`).
 - [ ] For a release: `sha256` is the digest of the exact asset in `artifact_url`, and I won't replace that asset.
+- [ ] For a release: `contentVersion` in my repository's `sce_sys/param.json` is in the `01.000.070` format and higher than my previous release's, so consoles see updates ([App versions](https://github.com/blackbearreloaded/ps5-homebrew-catalog/blob/main/docs/versioning.md)).
 - [ ] I have the right to distribute this build under the stated license.
 - [ ] I have read the [review policy](https://github.com/blackbearreloaded/ps5-homebrew-catalog/blob/main/docs/review-policy.md).

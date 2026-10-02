@@ -34,7 +34,7 @@ import shutil
 import subprocess
 from pathlib import Path
 from string import Template
-from urllib.parse import unquote
+from urllib.parse import quote, unquote
 
 from . import artifacts
 from .records import KINDS, Record, load_catalog
@@ -49,6 +49,9 @@ DEFAULT_BASE = "/"
 LEGACY_BASES = ("/ps5/",)
 MARKER = ".catalog-site"
 FEED_SCHEMA = 1
+API_VERSION = "v1"         # path of the store API; a breaking change gets a new path
+API_SCHEMA = 1             # raised when fields are added; clients ignore fields they don't know
+API_ICON_SIZES = (512, 256)
 ICON_SIZE = 512
 FONT_URL = "https://fonts.googleapis.com/css2?{families}&display=swap"
 THEMES = {
@@ -174,12 +177,31 @@ def process_icon(data: bytes) -> tuple[bytes, str]:
     return output.getvalue(), "webp"
 
 
-def _icon(url: str, cache: Path | None) -> tuple[bytes, str]:
-    """Processed icon for url, using and filling the optional cache of original bytes."""
+def png_icons(data: bytes) -> dict[int, bytes]:
+    """PNG copies for native clients, by longest side; they may not decode WebP. Needs Pillow to resize."""
+    try:
+        from PIL import Image
+    except ImportError:
+        return {API_ICON_SIZES[0]: data} if artifacts.inspect_icon(data)[0] == "png" else {}
+    icons = {}
+    with Image.open(io.BytesIO(data)) as image:
+        image = image.convert("RGBA")
+        for size in API_ICON_SIZES:
+            copy = image.copy()
+            copy.thumbnail((size, size))
+            output = io.BytesIO()
+            copy.save(output, "PNG", optimize=True)
+            icons[size] = output.getvalue()
+    return icons
+
+
+def _icon(url: str, cache: Path | None) -> tuple[bytes, str, bytes]:
+    """(site icon, its extension, original bytes) for url, using and filling the optional cache of originals."""
     entry = cache / (hashlib.sha256(url.encode()).hexdigest() + ".img") if cache else None
     if entry and entry.is_file():
         try:
-            return process_icon(entry.read_bytes())
+            data = entry.read_bytes()
+            return (*process_icon(data), data)
         except (OSError, ValueError):
             entry.unlink(missing_ok=True)
     data = artifacts.fetch_small(url, artifacts.MAX_ICON_BYTES)
@@ -187,7 +209,7 @@ def _icon(url: str, cache: Path | None) -> tuple[bytes, str]:
     if entry:
         cache.mkdir(parents=True, exist_ok=True)
         entry.write_bytes(data)
-    return result
+    return (*result, data)
 
 
 def _prepare_output(out: Path) -> None:
@@ -223,9 +245,80 @@ def _install_steps_text(record: Record) -> list[str]:
     return [html.unescape(re.sub(r"<[^>]+>", "", step)) for step in re.findall(r"<li>(.*?)</li>", _install_steps(record))]
 
 
+def _utc(iso: str | None) -> str | None:
+    """An ISO 8601 time as UTC with a Z suffix, the one form the API uses."""
+    if not iso:
+        return None
+    from datetime import datetime, timezone
+    return datetime.fromisoformat(iso).astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _write_json(path: Path, value) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+
+
+def write_api(root: Path, url: str, records: list[Record], report: Report, *, updated: dict[str, str], page,
+              icons: dict[str, dict[int, bytes]], commit: str, github=None, cache: Path | None = None) -> None:
+    """The store API (docs/api.md): one file per app, a browse index and a version map, plus PNG icons.
+
+    Per-app files and the version map hold nothing that changes between builds
+    of the same catalog, so an unchanged app keeps its ETag and costs clients a
+    304. Only the index carries the build's commit and time.
+    """
+    from . import facts as release_facts
+    from datetime import datetime, timezone
+    large, small = API_ICON_SIZES
+    index, versions = [], {}
+    for record in sorted(records, key=lambda r: r.titleid):
+        d, titleid, name = record.data, record.titleid, f"apps/{record.path.name}"
+        facts, problem = release_facts.cached(record, github, cache)
+        if problem:
+            report.warning(name, f"release facts not included in the API this time: {problem}")
+        elif github is not None and not record.reserved and facts.content_version is None:
+            report.notice(name, "no contentVersion found for this release; clients can't check it for updates")
+        icon = {}
+        for size, suffix in ((large, ""), (small, f"-{small}")):
+            content = icons.get(titleid, {}).get(size)
+            if content:
+                (root / "icons").mkdir(parents=True, exist_ok=True)
+                (root / "icons" / f"{titleid}{suffix}.png").write_bytes(content)
+                icon[size] = f"{url}icons/{titleid}{suffix}.png"
+        app = {
+            "schema": API_SCHEMA,
+            **d,
+            "status": "coming_soon" if record.reserved else "available",
+            "content_version": facts.content_version,
+            "format": None if record.reserved else artifact_format(record),
+            "artifact_name": None if record.reserved else unquote(record.asset_name),
+            "size": facts.size,
+            "tag": None if record.reserved else record.tag,
+            "released": facts.released,
+            "prerelease": facts.prerelease,
+            "release_url": None if record.reserved else f"{d['source_repo']}/releases/tag/{quote(record.tag, safe='')}",
+            "updated": _utc(updated.get(record.path.name)),
+            "page": page(record),
+            "icon": icon.get(large),
+            "icon_small": icon.get(small) or icon.get(large),
+        }
+        _write_json(root / "apps" / f"{titleid}.json", app)
+        index.append({key: app[key] for key in (
+            "titleid", "status", "name", "kind", "author", "version", "content_version", "format", "size",
+            "released", "updated", "icon_small")})
+        if not record.reserved:
+            versions[titleid] = {"content_version": facts.content_version, "version": d["version"]}
+    _write_json(root / "index.json", {
+        "schema": API_SCHEMA, "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "commit": commit, "count": len(index), "apps": index})
+    _write_json(root / "versions.json", {"schema": API_SCHEMA, "apps": versions})
+    if github is not None:
+        release_facts.prune(cache, records)
+
+
 def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BASE,
                site_url: str = DEFAULT_SITE_URL, fetch_icons: bool = True,
-               theme: str = DEFAULT_THEME, icon_cache: Path | None = None) -> int:
+               theme: str = DEFAULT_THEME, icon_cache: Path | None = None, github=None) -> int:
+    """Build the site. With `github`, release facts for the API are looked up (and kept in the cache)."""
     theme_obj = Theme(theme)
     records = load_catalog(apps_dir, report)
     if report.failed:
@@ -246,12 +339,14 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
     shutil.copyfile(shared_dir / "favicon.svg", root / "favicon.svg")
 
     icons: dict[str, str] = {}
+    api_icons: dict[str, dict[int, bytes]] = {}
     for record in records:
         icons[record.titleid] = placeholder
         if not fetch_icons or record.data["icon_url"] is None:
             continue
         try:
-            content, extension = _icon(record.data["icon_url"], icon_cache)
+            content, extension, original = _icon(record.data["icon_url"], icon_cache)
+            api_icons[record.titleid] = png_icons(original)
         except (artifacts.DownloadError, OSError, ValueError) as error:
             report.warning(f"apps/{record.path.name}", f"icon not included, using a placeholder: {error}")
             continue
@@ -437,6 +532,10 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
     (root / "catalog" / "v1.json").write_text(
         json.dumps(feed, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
 
+    write_api(root / "api" / API_VERSION, f"{site_url}{base}api/{API_VERSION}/", records, report,
+              updated=updated, page=lambda r: site_url + page_url(r), icons=api_icons, commit=commit,
+              github=github, cache=icon_cache)
+
     # Cloudflare Pages configuration.
     csp = ("default-src 'self'; img-src 'self' data:; style-src 'self' https://fonts.googleapis.com; "
            "font-src https://fonts.gstatic.com; script-src 'self'; connect-src 'self'; "
@@ -452,6 +551,10 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
   Cache-Control: public, max-age=31536000, immutable
 
 {base}catalog/*
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=300, must-revalidate
+
+{base}api/*
   Access-Control-Allow-Origin: *
   Cache-Control: public, max-age=300, must-revalidate
 """, encoding="utf-8")

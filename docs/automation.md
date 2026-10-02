@@ -42,7 +42,12 @@ For a pull request the checker:
    it to equal `sha256`. If the asset is ever replaced, GitHub's digest changes
    and the listing stops matching. Artifacts are never downloaded, opened or
    executed (see [artifact formats](artifact-formats.md)).
-6. **Checks the icon.** It fetches at most 2 MiB and requires PNG, JPEG or WebP
+6. **Reads the content version.** It looks for the release's `contentVersion`
+   in the repository's `sce_sys/param.json` at the release tag and reports it.
+   It warns, without failing, when there is none or when it isn't higher than
+   the listed release's, because consoles then can't see the release as an
+   update ([App versions](versioning.md)).
+7. **Checks the icon.** It fetches at most 2 MiB and requires PNG, JPEG or WebP
    content, warning when a PNG isn't square or is under 256×256.
 
 ### Why it is safe on untrusted pull requests
@@ -63,6 +68,13 @@ The CI workflow does run PR code (tests), with the standard read-only
 Every push runs the tests and the offline check, then fully verifies the records
 changed since the previous commit. This covers maintainer commits that don't go
 through a pull request.
+
+The deploy that follows builds the website and the [store API](api.md). For
+each release it hasn't seen, the build asks GitHub for the download size and
+release date and reads the content version from the repository's `param.json`;
+the answers are cached with the icons, keyed by the file's sha256, so later
+builds ask only about new releases. If GitHub can't be reached, the build
+still succeeds: those fields are `null` for that app until the next build.
 
 ## Daily health check
 
@@ -99,6 +111,9 @@ goes stale. For each app:
 - **sha256:** GitHub's digest of that asset. Nothing is downloaded.
 - **Icon:** a tag-pinned `icon_url` moves to the new tag if the icon exists
   there; otherwise it stays as it is.
+- **Content version:** the pull request says how `contentVersion` changes
+  between the listed and the new release, and points out a release that
+  consoles won't see as an update because the developer didn't raise it.
 
 The pull request shows each app's old and new values side by side, and the
 normal submission check verifies every record in it. Merge it to publish the
