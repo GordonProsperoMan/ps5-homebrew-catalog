@@ -50,7 +50,7 @@ LEGACY_BASES = ("/ps5/",)
 MARKER = ".catalog-site"
 FEED_SCHEMA = 1
 API_VERSION = "v1"         # path of the store API; a breaking change gets a new path
-API_SCHEMA = 2             # raised when fields are added; clients ignore fields they don't know
+API_SCHEMA = 3             # raised when fields are added; clients ignore fields they don't know
 API_ICON_SIZES = (512, 256)
 ICON_SIZE = 512
 FONT_URL = "https://fonts.googleapis.com/css2?{families}&display=swap"
@@ -70,6 +70,15 @@ def e(value) -> str:
 
 def artifact_format(record: Record) -> str:
     return record.asset_name.rsplit(".", 1)[1].lower()
+
+
+def source_sequence() -> int:
+    """The catalog's sequence number: commits in the history of this build. It only ever grows on main,
+    which lets a client refuse a signed catalog older than one it has already accepted. 0 when unknown."""
+    if (_git("rev-parse", "--is-shallow-repository") or "").strip() == "true":
+        _git("fetch", "--quiet", "--unshallow")
+    count = (_git("rev-list", "--count", "HEAD") or "").strip()
+    return int(count) if count.isdigit() else 0
 
 
 def source_commit() -> str:
@@ -314,6 +323,9 @@ def write_api(root: Path, url: str, records: list[Record], report: Report, *, up
         "schema": API_SCHEMA, "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "commit": commit, "count": len(index), "apps": index})
     _write_json(root / "versions.json", {"schema": API_SCHEMA, "apps": versions})
+    # Hashes of everything above, for the deploy to sign (catalog/signing.py).
+    from . import signing
+    signing.write_manifest(root, API_SCHEMA, source_sequence(), commit)
     if github is not None:
         release_facts.prune(cache, records)
 

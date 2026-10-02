@@ -88,6 +88,12 @@ jobs:
       - run: python3 -m catalog build --out dist --icon-cache .icon-cache
         env:
           GITHUB_TOKEN: ${{ github.token }}   # read-only: raises the API rate limit for release facts
+      - name: Sign the store API
+        # The only step that sees the signing key. It fails rather than publish a catalog
+        # that consoles would refuse: unsigned, or signed with a key that isn't in keys/.
+        run: python3 -m catalog sign --out dist --require
+        env:
+          CATALOG_SIGNING_KEY: ${{ secrets.CATALOG_SIGNING_KEY }}
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '22'

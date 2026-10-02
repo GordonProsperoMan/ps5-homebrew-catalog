@@ -17,6 +17,7 @@ API itself, and there is no server behind it, only files on a CDN.
 | [`/api/v1/versions.json`](https://homebrew.page/api/v1/versions.json) | The current version of every available app | about 65 bytes per app | check many installed apps for updates in one request |
 | [`/api/v1/index.json`](https://homebrew.page/api/v1/index.json) | One compact entry per app, reservations included | about 330 bytes per app | show the catalog as a list |
 | `/api/v1/apps/<TITLEID>.json` | Everything about one app | about 1 KB | show one app, install it, or let an app check itself |
+| [`/api/v1/manifest.json`](https://homebrew.page/api/v1/manifest.json) and `manifest.sig` | The hash of every JSON file above, the catalog's sequence number, and a signature over both | about 90 bytes per app | verify that the catalog is genuine before installing from it |
 | `/api/v1/icons/<TITLEID>.png` | The app's icon as PNG, at most 512 px on its longer side | varies | show the icon without a WebP decoder |
 | `/api/v1/icons/<TITLEID>-256.png` | The same, at most 256 px | varies | lists and grids |
 
@@ -31,7 +32,7 @@ still published and unchanged; new clients should use the API.
 
 ```json
 {
-  "schema": 2,
+  "schema": 3,
   "titleid": "PPSA99039",
   "name": "EVO Player",
   "kind": "app",
@@ -97,7 +98,8 @@ Rules that hold for every file:
 
 1. Download `artifact_url`. It redirects to GitHub's file host; follow
    redirects.
-2. Compute the SHA-256 of what you downloaded and compare it with `sha256`.
+2. Compute the SHA-256 of what you downloaded and compare it with `sha256`,
+   taken from an app file you have [verified](#verifying-the-catalog).
    **Install nothing that doesn't match.** The developer replacing a release
    file changes its hash; the catalog's daily health check then flags the
    listing.
@@ -110,7 +112,7 @@ Rules that hold for every file:
 
 ```json
 {
-  "schema": 2,
+  "schema": 3,
   "generated": "2026-10-02T18:26:14Z",
   "commit": "bbb7e4475b867c486a05d1639023df3f03edc28e",
   "count": 18,
@@ -145,7 +147,7 @@ length of `apps`.
 
 ```json
 {
-  "schema": 2,
+  "schema": 3,
   "apps": {
     "PPSA99002": { "content_version": "01.000.070", "version": "01.000.070" },
     "PPSA99039": { "content_version": "01.000.001", "version": "0.10.0" },
@@ -203,12 +205,85 @@ user may be offline.
 
 ### A store checking what is installed
 
+0. Verify the catalog first ([Verifying the catalog](#verifying-the-catalog)).
 1. `GET https://homebrew.page/api/v1/versions.json`: one request, however many
    apps are installed, and the catalog never learns which ones they are.
 2. For each installed title ID that is in `apps`, apply the rule.
 3. Fetch `apps/<TITLEID>.json` only for the apps the user opens or updates.
 
 Installed titles that aren't in `versions.json` aren't listed in the catalog.
+
+## Verifying the catalog
+
+HTTPS proves a client is talking to `homebrew.page`. The signature proves the
+catalog was produced by this repository's build, even if the website or its
+host were ever taken over. **A client that installs software should verify;**
+one that only displays information (an app checking itself for an update) can
+rely on HTTPS.
+
+### `manifest.json` and `manifest.sig`
+
+```json
+{
+  "commit": "2f516b1c0e4a7d9b3f6a8c5e1d2b4a6f8e0c1d3b",
+  "files": {
+    "apps/PPSA99002.json": "6b1f…64 hexadecimal characters…",
+    "index.json": "c41d…",
+    "versions.json": "9a3e…"
+  },
+  "schema": 3,
+  "sequence": 72
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `files` | Every JSON file of the API except the manifest itself, by path under `/api/v1/`, with the SHA-256 of its exact bytes. Icons aren't in it. |
+| `sequence` | The catalog's sequence number. It grows with every change to the catalog and never goes down. |
+| `commit` | The catalog repository commit this build came from. |
+| `schema` | As everywhere else. |
+
+`manifest.sig` is the **Ed25519 signature of the exact bytes of
+`manifest.json`**: 64 raw bytes, no encoding and no wrapper.
+
+### What a client does
+
+1. Fetch `manifest.json` and `manifest.sig`.
+2. Verify the signature against the public keys below. It is valid if **either**
+   key verifies it. If neither does, treat the catalog as unreachable: use
+   nothing from it.
+3. Compare `sequence` with the highest one you have ever accepted, which you
+   keep on disk. Lower: refuse it, as in step 2. Equal or higher: accept, and
+   remember it.
+4. For every API file you then use, compute the SHA-256 of the bytes you
+   downloaded and require it to equal the entry in `files`. A file that isn't
+   listed, or doesn't match, is not used. A mismatch right after a catalog
+   update usually means the manifest and the file come from two different
+   builds; fetch the manifest again.
+
+An app that is absent from a verified manifest is not in the catalog.
+
+### The public keys
+
+Two Ed25519 keys can sign the catalog: the one the build uses, and a spare
+whose private half is kept offline and takes over if the first is ever lost or
+exposed. Clients carry both. Neither expires.
+
+| Key ID | Public key (32 bytes, hexadecimal) | File |
+| --- | --- | --- |
+| `da351006acb6e3c3` | `87391bf1698ecef101bf5e29dc8585ee5947d571e19470de7411c5d3b137b5cf` | [`keys/catalog-signing-1.pub.pem`](../keys/catalog-signing-1.pub.pem) |
+| `eef399ea3007720a` | `509bcfab7edfb4e5ed23639488517c6ef2657c13b6b7f2bf699c8989d9b0dd7b` | [`keys/catalog-signing-2.pub.pem`](../keys/catalog-signing-2.pub.pem) |
+
+The key ID is the first 16 hexadecimal characters of the SHA-256 of the 32 key
+bytes. The files are the same keys in PEM form, for `openssl`:
+
+```sh
+curl -sO https://homebrew.page/api/v1/manifest.json -O https://homebrew.page/api/v1/manifest.sig
+openssl pkeyutl -verify -pubin -inkey keys/catalog-signing-1.pub.pem -rawin -in manifest.json -sigfile manifest.sig
+```
+
+If a key is ever retired, this page says so, and the next store release drops
+it.
 
 ## Caching icons
 
@@ -268,6 +343,7 @@ icon, as for any other file, at the cost of one request per icon.
 | --- | --- | --- |
 | 1 | 2026-10-02 | First version: `versions.json`, `index.json`, `apps/<TITLEID>.json`, PNG icons. |
 | 2 | 2026-10-02 | Added `icon_hash` to app files and index entries, so clients can cache icons without requests. |
+| 3 | 2026-10-02 | Added `manifest.json` and `manifest.sig`: the catalog is signed. |
 
 ## Where the values come from
 
@@ -279,5 +355,7 @@ icon, as for any other file, at the cost of one request per icon.
 | `content_version` | `sce_sys/param.json` in the app's repository at the release tag | Same; see [App versions](versioning.md) |
 | `updated` | The record's history in this repository | Every build |
 | Icons | `icon_url`, converted to PNG | Every build, cached |
+| `manifest.json` | The hashes of the files this build produced; `sequence` is the number of commits in the catalog's history | Every build |
+| `manifest.sig` | Signed by the deploy job with a key held as a deployment secret | Every deploy; the deploy fails rather than publish an unsigned or wrongly signed catalog |
 
 No artifact is downloaded to produce any of it.

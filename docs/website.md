@@ -13,7 +13,7 @@ dist/
 ├── index.html                  the catalog: cards, or a compact list (?view=list)
 ├── tv/                         TV mode: the catalog as a 10-foot interface
 ├── app/<TITLEID>/              one page per app: download, install steps, sha256
-├── api/v1/                     the store API: per-app files, index, versions, PNG icons
+├── api/v1/                     the store API: per-app files, index, versions, PNG icons, signed manifest
 ├── catalog/v1.json             the older single-file feed
 └── assets/                     content-hashed CSS, JS and WebP icons
 ```
@@ -87,7 +87,8 @@ the console's browser presents the controller.
 
 The build publishes the catalog as static JSON for the console store, for apps
 that check themselves for updates, and for other clients: one file per app, a
-compact index, a version map, and PNG icons. **[Store API](api.md)** is its
+compact index, a version map, PNG icons, and a signed manifest of all of it.
+**[Store API](api.md)** is its
 specification, including how clients find updates and how the API is versioned.
 
 Besides the records, it carries each release's download size, release date and

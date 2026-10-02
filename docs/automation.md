@@ -76,6 +76,19 @@ the answers are cached with the icons, keyed by the file's sha256, so later
 builds ask only about new releases. If GitHub can't be reached, the build
 still succeeds: those fields are `null` for that app until the next build.
 
+The deploy then **signs the catalog**. The build has written
+`api/v1/manifest.json`, the hash of every JSON file of the API; a separate
+step, the only one that sees the key, signs it with `openssl` and writes
+`manifest.sig` (`python3 -m catalog sign --require`). The key is the
+`CATALOG_SIGNING_KEY` secret of the `cloudflare-pages` environment, an Ed25519
+private key in PEM form that is never in the repository. The step fails, and
+nothing is deployed, if the key is missing or isn't one of the public keys in
+[`keys/`](../keys): consoles would refuse such a catalog. A second key pair
+exists as a spare; its private half is kept offline by the maintainer and its
+public half is in `keys/` too. To switch to it, replace the secret with the
+spare's private key. The keys don't expire. See
+[Verifying the catalog](api.md#verifying-the-catalog).
+
 ## Daily health check
 
 Every day it re-verifies one seventh of the catalog (release still published,

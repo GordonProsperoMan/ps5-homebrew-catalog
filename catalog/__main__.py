@@ -442,6 +442,29 @@ def cmd_build(args) -> int:
     return report.emit("Site build", f"Built {count} app page(s) into {args.out}.")
 
 
+def cmd_sign(args) -> int:
+    """Sign the built API's manifest with CATALOG_SIGNING_KEY (a deployment secret)."""
+    from . import signing
+    from .site import API_VERSION, normalize_base
+    base = normalize_base(args.base).strip("/")
+    api_root = Path(args.out) / base / "api" / API_VERSION if base else Path(args.out) / "api" / API_VERSION
+    key = signing.signing_key_from_environment()
+    if key is None:
+        if args.require:
+            print("CATALOG_SIGNING_KEY is not set; refusing to publish an unsigned catalog", file=sys.stderr)
+            return 1
+        print("CATALOG_SIGNING_KEY is not set; the API is left unsigned.")
+        return 0
+    try:
+        identifier = signing.sign(api_root, key)
+    except signing.SigningError as error:
+        print(f"signing failed: {error}", file=sys.stderr)
+        return 1
+    manifest = json.loads((api_root / signing.MANIFEST).read_text(encoding="utf-8"))
+    print(f"Signed the API manifest: sequence {manifest['sequence']}, {len(manifest['files'])} file(s), key {identifier}.")
+    return 0
+
+
 def cmd_digest(args) -> int:
     """Print the sha256 GitHub reports for a release asset URL."""
     marker = "/releases/download/"
@@ -494,6 +517,12 @@ def main(argv: list[str] | None = None) -> int:
     build.add_argument("--no-icons", action="store_true", help="offline build: no icons (placeholders) and no release facts in the API")
     build.add_argument("--icon-cache", help="directory that keeps fetched icons and release facts between builds")
     build.set_defaults(func=cmd_build)
+
+    sign = commands.add_parser("sign", help="CI: sign the built API's manifest with CATALOG_SIGNING_KEY")
+    sign.add_argument("--out", default=str(ROOT / "dist"))
+    sign.add_argument("--base", default=DEFAULT_BASE)
+    sign.add_argument("--require", action="store_true", help="fail when the key is not set")
+    sign.set_defaults(func=cmd_sign)
 
     draft = commands.add_parser("draft", help="draft a record for a repository (no downloads, no writes to GitHub)")
     draft.add_argument("repository", help="owner/repository or GitHub URL")

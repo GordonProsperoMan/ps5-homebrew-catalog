@@ -72,7 +72,7 @@ class SiteBuildTests(unittest.TestCase):
         api = self.out / "api" / "v1"
         app = json.loads((api / "apps" / "PPSA01234.json").read_text(encoding="utf-8"))
         self.assertEqual((app["schema"], app["status"], app["format"], app["artifact_name"], app["tag"]),
-                         (2, "available", "zip", "PPSA01234.zip", "01.000.000"))
+                         (3, "available", "zip", "PPSA01234.zip", "01.000.000"))
         self.assertEqual(app["sha256"], "a" * 64)                      # every record field is there
         self.assertEqual(app["page"], "https://homebrew.page/app/PPSA01234/")
         self.assertEqual(app["release_url"], "https://github.com/example/example-app/releases/tag/01.000.000")
@@ -83,14 +83,23 @@ class SiteBuildTests(unittest.TestCase):
         self.assertEqual((soon["status"], soon["artifact_url"], soon["format"], soon["tag"]),
                          ("coming_soon", None, None, None))
         index = json.loads((api / "index.json").read_text(encoding="utf-8"))
-        self.assertEqual((index["schema"], index["count"], index["commit"]), (2, 3, "abc1234def"))
+        self.assertEqual((index["schema"], index["count"], index["commit"]), (3, 3, "abc1234def"))
         self.assertEqual([a["titleid"] for a in index["apps"]], ["PPSA01234", "PPSA04321", "PPSA05555"])
         self.assertNotIn("description", index["apps"][0])
         versions = json.loads((api / "versions.json").read_text(encoding="utf-8"))
-        self.assertEqual(versions, {"schema": 2, "apps": {
+        self.assertEqual(versions, {"schema": 3, "apps": {
             "PPSA01234": {"content_version": None, "version": "01.000.000"},
             "PPSA04321": {"content_version": None, "version": "2"}}})
         self.assertIn("/api/*\n  Access-Control-Allow-Origin: *", (self.out / "_headers").read_text(encoding="utf-8"))
+        # The manifest names every JSON file of the API by its hash; the build itself never signs.
+        import hashlib
+        manifest = json.loads((api / "manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(sorted(manifest["files"]), ["apps/PPSA01234.json", "apps/PPSA04321.json", "apps/PPSA05555.json",
+                                                     "index.json", "versions.json"])
+        self.assertEqual(manifest["files"]["index.json"], hashlib.sha256((api / "index.json").read_bytes()).hexdigest())
+        self.assertEqual((manifest["schema"], manifest["commit"]), (3, "abc1234def"))
+        self.assertIsInstance(manifest["sequence"], int)
+        self.assertFalse((api / "manifest.sig").exists())
 
     def test_api_release_facts_and_icons(self):
         from catalog import facts as facts_module

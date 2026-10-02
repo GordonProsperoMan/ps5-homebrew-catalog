@@ -168,7 +168,8 @@ The same build publishes the catalog for programs at
 version map and PNG icons. It is what a console store reads, and what an app
 reads to tell its user that an update exists. Besides the records it carries
 each release's download size, release date and content version, all read from
-GitHub without downloading anything.
+GitHub without downloading anything. The deploy signs the catalog, so a store
+can verify it is genuine before installing from it.
 
 - **[Store API](docs/api.md)**: the files, every field, how to find updates,
   and how the API is versioned.
@@ -209,6 +210,7 @@ or privately as described in [SECURITY.md](SECURITY.md); it will be withdrawn
 ```text
 apps/                 One <TITLEID>.json record per app
 catalog/              Checker, verifier, site generator and discovery job (Python standard library)
+keys/                 Public keys the store API is signed with (the private keys are never here)
 discovery/            Repositories the discovery job never proposes (ignore.txt)
 site/                 Website themes, templates and shared assets
 tests/                Unit and end-to-end tests for the checker
