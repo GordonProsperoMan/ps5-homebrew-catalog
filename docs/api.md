@@ -31,7 +31,7 @@ still published and unchanged; new clients should use the API.
 
 ```json
 {
-  "schema": 1,
+  "schema": 2,
   "titleid": "PPSA99039",
   "name": "EVO Player",
   "kind": "app",
@@ -55,7 +55,8 @@ still published and unchanged; new clients should use the API.
   "updated": "2026-09-29T17:20:37Z",
   "page": "https://homebrew.page/app/PPSA99039/",
   "icon": "https://homebrew.page/api/v1/icons/PPSA99039.png",
-  "icon_small": "https://homebrew.page/api/v1/icons/PPSA99039-256.png"
+  "icon_small": "https://homebrew.page/api/v1/icons/PPSA99039-256.png",
+  "icon_hash": "5b0c1e7a9d3f4a26"
 }
 ```
 
@@ -78,6 +79,7 @@ The first eleven fields after `schema` are the app's record, exactly as in
 | `page` | string | The app's page on the website. |
 | `icon` | string or null | PNG icon, at most 512 px on its longer side. |
 | `icon_small` | string or null | PNG icon, at most 256 px. Falls back to `icon` when only one size exists. |
+| `icon_hash` | string or null | Fingerprint of the app's icon: 16 hexadecimal characters that change when, and only when, the developer's image changes. `null` when there is no icon. See [Caching icons](#caching-icons). |
 
 Rules that hold for every file:
 
@@ -108,7 +110,7 @@ Rules that hold for every file:
 
 ```json
 {
-  "schema": 1,
+  "schema": 2,
   "generated": "2026-10-02T18:26:14Z",
   "commit": "bbb7e4475b867c486a05d1639023df3f03edc28e",
   "count": 18,
@@ -125,7 +127,8 @@ Rules that hold for every file:
       "size": 36383357,
       "released": "2026-10-01T01:50:46Z",
       "updated": "2026-10-01T04:17:55Z",
-      "icon_small": "https://homebrew.page/api/v1/icons/PPSA99002-256.png"
+      "icon_small": "https://homebrew.page/api/v1/icons/PPSA99002-256.png",
+      "icon_hash": "9f2c4d7e1a6b3c58"
     }
   ]
 }
@@ -134,6 +137,7 @@ Rules that hold for every file:
 `apps` is sorted by title ID and includes reservations (`status` tells them
 apart). Each entry is a subset of the app's own file, with the same meanings;
 fetch `apps/<TITLEID>.json` for the description, license, download and hash.
+`icon_hash` is there so a list can keep its icons; see [Caching icons](#caching-icons).
 `generated` and `commit` say which build of the catalog this is; `count` is the
 length of `apps`.
 
@@ -141,7 +145,7 @@ length of `apps`.
 
 ```json
 {
-  "schema": 1,
+  "schema": 2,
   "apps": {
     "PPSA99002": { "content_version": "01.000.070", "version": "01.000.070" },
     "PPSA99039": { "content_version": "01.000.001", "version": "0.10.0" },
@@ -206,6 +210,25 @@ user may be offline.
 
 Installed titles that aren't in `versions.json` aren't listed in the catalog.
 
+## Caching icons
+
+Icons are the largest files in the API, and they rarely change. A client
+should download each one once and keep it:
+
+1. Store every icon you download together with the `icon_hash` it came with.
+2. When you read `index.json` (or an app's own file), compare each app's
+   `icon_hash` with the one you stored.
+3. Download the icon again only when they differ, or when you have none. When
+   `icon_hash` is `null`, the app has no icon: show your placeholder.
+
+An unchanged icon then costs no request at all. `icon_hash` covers both sizes,
+and it is independent of the app's version: a new release with the same image
+keeps it, and an image the developer replaces changes it. Treat it as an
+opaque string; only equality matters.
+
+A client that keeps no fingerprints can still send `If-None-Match` for each
+icon, as for any other file, at the cost of one request per icon.
+
 ## Requests
 
 - **HTTPS only**, `GET` only. No key, no account, no rate limit to negotiate;
@@ -244,6 +267,7 @@ Installed titles that aren't in `versions.json` aren't listed in the catalog.
 | `schema` | Date | Change |
 | --- | --- | --- |
 | 1 | 2026-10-02 | First version: `versions.json`, `index.json`, `apps/<TITLEID>.json`, PNG icons. |
+| 2 | 2026-10-03 | Added `icon_hash` to app files and index entries, so clients can cache icons without requests. |
 
 ## Where the values come from
 

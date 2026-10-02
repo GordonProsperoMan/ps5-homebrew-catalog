@@ -72,22 +72,22 @@ class SiteBuildTests(unittest.TestCase):
         api = self.out / "api" / "v1"
         app = json.loads((api / "apps" / "PPSA01234.json").read_text(encoding="utf-8"))
         self.assertEqual((app["schema"], app["status"], app["format"], app["artifact_name"], app["tag"]),
-                         (1, "available", "zip", "PPSA01234.zip", "01.000.000"))
+                         (2, "available", "zip", "PPSA01234.zip", "01.000.000"))
         self.assertEqual(app["sha256"], "a" * 64)                      # every record field is there
         self.assertEqual(app["page"], "https://homebrew.page/app/PPSA01234/")
         self.assertEqual(app["release_url"], "https://github.com/example/example-app/releases/tag/01.000.000")
         # An offline build knows no release facts and has no icons; the fields are present and null.
-        self.assertEqual([app[k] for k in ("size", "released", "prerelease", "content_version", "icon", "icon_small")],
-                         [None] * 6)
+        self.assertEqual([app[k] for k in ("size", "released", "prerelease", "content_version", "icon", "icon_small",
+                                           "icon_hash")], [None] * 7)
         soon = json.loads((api / "apps" / "PPSA05555.json").read_text(encoding="utf-8"))
         self.assertEqual((soon["status"], soon["artifact_url"], soon["format"], soon["tag"]),
                          ("coming_soon", None, None, None))
         index = json.loads((api / "index.json").read_text(encoding="utf-8"))
-        self.assertEqual((index["schema"], index["count"], index["commit"]), (1, 3, "abc1234def"))
+        self.assertEqual((index["schema"], index["count"], index["commit"]), (2, 3, "abc1234def"))
         self.assertEqual([a["titleid"] for a in index["apps"]], ["PPSA01234", "PPSA04321", "PPSA05555"])
         self.assertNotIn("description", index["apps"][0])
         versions = json.loads((api / "versions.json").read_text(encoding="utf-8"))
-        self.assertEqual(versions, {"schema": 1, "apps": {
+        self.assertEqual(versions, {"schema": 2, "apps": {
             "PPSA01234": {"content_version": None, "version": "01.000.000"},
             "PPSA04321": {"content_version": None, "version": "2"}}})
         self.assertIn("/api/*\n  Access-Control-Allow-Origin: *", (self.out / "_headers").read_text(encoding="utf-8"))
@@ -109,6 +109,12 @@ class SiteBuildTests(unittest.TestCase):
         self.assertEqual(app["icon"], "https://homebrew.page/api/v1/icons/PPSA01234.png")
         self.assertEqual(app["icon_small"], "https://homebrew.page/api/v1/icons/PPSA01234-256.png")
         self.assertEqual((api / "icons" / "PPSA01234-256.png").read_bytes(), b"small")
+        # The fingerprint is of the developer's image, so it changes only when that image does.
+        import hashlib
+        self.assertEqual(app["icon_hash"], hashlib.sha256(png).hexdigest()[:16])
+        index = json.loads((api / "index.json").read_text(encoding="utf-8"))
+        self.assertEqual(index["apps"][0]["icon_hash"], app["icon_hash"])
+        self.assertIsNone(index["apps"][2]["icon_hash"])               # the reservation has no icon
         versions = json.loads((api / "versions.json").read_text(encoding="utf-8"))
         self.assertEqual(versions["apps"]["PPSA01234"], {"content_version": "01.000.000", "version": "01.000.000"})
 

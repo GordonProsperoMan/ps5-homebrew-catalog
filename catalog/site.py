@@ -50,7 +50,7 @@ LEGACY_BASES = ("/ps5/",)
 MARKER = ".catalog-site"
 FEED_SCHEMA = 1
 API_VERSION = "v1"         # path of the store API; a breaking change gets a new path
-API_SCHEMA = 1             # raised when fields are added; clients ignore fields they don't know
+API_SCHEMA = 2             # raised when fields are added; clients ignore fields they don't know
 API_ICON_SIZES = (512, 256)
 ICON_SIZE = 512
 FONT_URL = "https://fonts.googleapis.com/css2?{families}&display=swap"
@@ -259,7 +259,8 @@ def _write_json(path: Path, value) -> None:
 
 
 def write_api(root: Path, url: str, records: list[Record], report: Report, *, updated: dict[str, str], page,
-              icons: dict[str, dict[int, bytes]], commit: str, github=None, cache: Path | None = None) -> None:
+              icons: dict[str, dict[int, bytes]], icon_hashes: dict[str, str], commit: str, github=None,
+              cache: Path | None = None) -> None:
     """The store API (docs/api.md): one file per app, a browse index and a version map, plus PNG icons.
 
     Per-app files and the version map hold nothing that changes between builds
@@ -300,11 +301,13 @@ def write_api(root: Path, url: str, records: list[Record], report: Report, *, up
             "page": page(record),
             "icon": icon.get(large),
             "icon_small": icon.get(small) or icon.get(large),
+            # Lets a client keep its copy of the icon until the developer's image changes.
+            "icon_hash": icon_hashes.get(titleid) if icon else None,
         }
         _write_json(root / "apps" / f"{titleid}.json", app)
         index.append({key: app[key] for key in (
             "titleid", "status", "name", "kind", "author", "version", "content_version", "format", "size",
-            "released", "updated", "icon_small")})
+            "released", "updated", "icon_small", "icon_hash")})
         if not record.reserved:
             versions[titleid] = {"content_version": facts.content_version, "version": d["version"]}
     _write_json(root / "index.json", {
@@ -340,6 +343,7 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
 
     icons: dict[str, str] = {}
     api_icons: dict[str, dict[int, bytes]] = {}
+    icon_hashes: dict[str, str] = {}
     for record in records:
         icons[record.titleid] = placeholder
         if not fetch_icons or record.data["icon_url"] is None:
@@ -347,6 +351,7 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
         try:
             content, extension, original = _icon(record.data["icon_url"], icon_cache)
             api_icons[record.titleid] = png_icons(original)
+            icon_hashes[record.titleid] = hashlib.sha256(original).hexdigest()[:16]
         except (artifacts.DownloadError, OSError, ValueError) as error:
             report.warning(f"apps/{record.path.name}", f"icon not included, using a placeholder: {error}")
             continue
@@ -533,7 +538,8 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
         json.dumps(feed, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
 
     write_api(root / "api" / API_VERSION, f"{site_url}{base}api/{API_VERSION}/", records, report,
-              updated=updated, page=lambda r: site_url + page_url(r), icons=api_icons, commit=commit,
+              updated=updated, page=lambda r: site_url + page_url(r), icons=api_icons, icon_hashes=icon_hashes,
+              commit=commit,
               github=github, cache=icon_cache)
 
     # Cloudflare Pages configuration.
