@@ -91,6 +91,8 @@ class SiteBuildTests(unittest.TestCase):
             "PPSA01234": {"content_version": None, "version": "01.000.000"},
             "PPSA04321": {"content_version": None, "version": "2"}}})
         self.assertIn("/api/*\n  Access-Control-Allow-Origin: *", (self.out / "_headers").read_text(encoding="utf-8"))
+        self.assertIn("/api/*/manifest.sig\n  Content-Type: application/octet-stream",
+                      (self.out / "_headers").read_text(encoding="utf-8"))
         # The manifest names every JSON file of the API by its hash; the build itself never signs.
         import hashlib
         manifest = json.loads((api / "manifest.json").read_text(encoding="utf-8"))
