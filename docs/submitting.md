@@ -21,8 +21,12 @@ then reviews and merges it.
   required for a listing, but it is how a console knows an installed copy is
   outdated; see [App versions](versioning.md).
 - A **title ID** no other listed app uses.
-- A **square icon** (PNG, JPEG or WebP, 256×256 or larger, at most 2 MiB) at a
-  stable HTTPS URL. Your `sce_sys/icon0.png` in the repository works well.
+- A **square icon** at a stable HTTPS URL: PNG, JPEG or WebP, **512×512
+  recommended** (256×256 at least), at most 2 MiB. That is exactly the PS5's
+  own `sce_sys/icon0.png` (512×512 PNG), so pointing at that file in your
+  repository is the simplest choice. The site and the store show icons at up
+  to 512 px; a larger image is scaled down, and one that isn't square is
+  cropped to a square on the website.
 - The pull request must come from the **account that owns the repository**. For
   an organization's repository, your membership of that organization must be
   [public](https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-personal-account-on-github/managing-your-membership-in-organizations/publicizing-or-hiding-organization-membership).

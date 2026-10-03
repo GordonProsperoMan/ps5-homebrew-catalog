@@ -153,7 +153,6 @@ img { display: block; }
   opacity: 0.22;
   pointer-events: none;
 }
-.tv-tile--soon .tv-tile__art img { opacity: 0.55; filter: grayscale(0.4); }
 
 /* Detail */
 

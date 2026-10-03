@@ -39,8 +39,9 @@ dist/
 - **Updated dates.** Each app shows when its record last changed on `main`,
   taken from the git history of `apps/<TITLEID>.json`. The build deepens a
   shallow clone first so dates stay correct in CI.
-- **Coming soon.** Title ID reservations appear as dimmed cards with a "Coming
-  soon" badge and no download; see [Reserving a title ID](submitting.md#reserving-a-title-id).
+- **Coming soon.** Title ID reservations appear as cards with the shared
+  "Coming soon" picture (`site/shared/coming-soon.png`) in place of an icon,
+  and no download; see [Reserving a title ID](submitting.md#reserving-a-title-id).
 - Every metadata value is HTML-escaped; descriptions render as plain text.
 - Icons are fetched from `icon_url`, resized to 512 px WebP (when Pillow is
   installed) and served from the site, so visitors never hit the original host.

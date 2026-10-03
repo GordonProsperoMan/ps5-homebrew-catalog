@@ -17,7 +17,7 @@ only [reservations](#reservations-coming-soon) use `null`.
 | `source_repo` | 200 | `https://github.com/<owner>/<repository>`, using GitHub's exact capitalization. Must be public. |
 | `artifact_url` | 500 | `<source_repo>/releases/download/<tag>/<asset>` for a published release; the asset ends in `.zip`, `.ffpfsc` or `.ffpkg`. Moving links such as `/releases/latest/download/` are rejected. Unique across the catalog. |
 | `sha256` | 64 | SHA-256 of the artifact as 64 lowercase hex characters. Unique across the catalog. |
-| `icon_url` | 500 | Direct HTTPS link ending in `.png`, `.jpg`, `.jpeg` or `.webp`, returning that image type, at most 2 MiB. Square, 256×256 or larger recommended. Pin to a tag or commit. |
+| `icon_url` | 500 | Direct HTTPS link ending in `.png`, `.jpg`, `.jpeg` or `.webp`, returning that image type, at most 2 MiB. Square; 512×512 recommended (the size of `sce_sys/icon0.png`), 256×256 at least. Larger images are scaled down to 512 px. Pin to a tag or commit. |
 
 ## Reservations (coming soon)
 

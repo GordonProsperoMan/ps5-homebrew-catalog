@@ -356,8 +356,10 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
     icons: dict[str, str] = {}
     api_icons: dict[str, dict[int, bytes]] = {}
     icon_hashes: dict[str, str] = {}
+    # A reservation has no icon of its own yet: it gets the shared "coming soon" picture.
+    coming_soon = assets.add("coming-soon", *reversed(process_icon((shared_dir / "coming-soon.png").read_bytes())))
     for record in records:
-        icons[record.titleid] = placeholder
+        icons[record.titleid] = coming_soon if record.reserved else placeholder
         if not fetch_icons or record.data["icon_url"] is None:
             continue
         try:

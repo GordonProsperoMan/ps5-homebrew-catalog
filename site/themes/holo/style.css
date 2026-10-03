@@ -231,29 +231,10 @@ html[data-view="list"] [data-view-panel="cards"] { display: none !important; }
 /* Coming soon */
 
 .holo__art { position: relative; }
-.holo--soon .holo__art img,
-.lrow--soon .lrow__icon img { filter: grayscale(0.85) brightness(0.6); }
 .holo--soon .holo__frame {
   background:
     linear-gradient(160deg, #1c1c28, #121219) padding-box,
     repeating-linear-gradient(135deg, var(--edge-1) 0 10px, rgba(255, 255, 255, 0.08) 10px 20px) border-box;
-}
-.soon-badge {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  padding: 8px 14px;
-  border-radius: 10px;
-  background: var(--foil);
-  background-size: 200% 100%;
-  color: #120d1f;
-  font: 800 12px/1 var(--display);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  transform: translate(-50%, -50%) rotate(-8deg);
-  animation: shimmer 6s linear infinite;
 }
 .soon-pill { display: inline-block; padding: 3px 9px; border: 1px dashed var(--gold); border-radius: 999px; color: var(--gold); font: 700 11px/1.2 var(--display); letter-spacing: 0.06em; text-transform: uppercase; }
 .soon-note { margin: 26px 0 0; padding: 16px 18px; border: 1px dashed rgba(255, 209, 102, 0.55); border-radius: 14px; background: rgba(255, 209, 102, 0.08); color: #ffe3a3; }
@@ -410,7 +391,6 @@ html[data-view="list"] [data-view-panel="cards"] { display: none !important; }
   .holo__bottom { font-size: 10px; }
   .holo__bottom span:first-child { overflow: hidden; text-overflow: ellipsis; }
   .holo__bottom span:last-child { display: none; }
-  .soon-badge { font-size: 10px; padding: 6px 10px; }
   .binder { padding-top: 24px; }
   .panel { padding: 24px 20px; }
   .attrs { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
