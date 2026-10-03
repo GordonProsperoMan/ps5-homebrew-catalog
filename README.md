@@ -18,7 +18,7 @@ and they will feed a console-side store that can install listed apps.
 
 ```mermaid
 flowchart TB
-    release["Developer publishes a GitHub release tagged with the app's version<br/>with a .zip, .ffpfsc or .ffpkg attached"]
+    release["Developer publishes a GitHub release tagged with the app's version<br/>with a .zip of the app folder attached"]
 
     subgraph prs["Pull requests that add or change apps/TITLEID.json records"]
         direction LR
@@ -62,8 +62,8 @@ listed app can't be silently replaced.
 
 Read **[Submitting an app](docs/submitting.md)**. In short:
 
-1. Package your app as a `.zip` app folder, `.ffpfsc` image or `.ffpkg`
-   ([artifact formats](docs/artifact-formats.md)).
+1. Package your app as a `.zip` of its app folder, the only format accepted
+   at the moment ([artifact formats](docs/artifact-formats.md)).
 2. Publish it in a GitHub release of your public repository, **tagged with the
    app's version** (e.g. `v1.2.0`). The tag is the version the catalog shows.
 3. Add `apps/<TITLEID>.json` from the account that owns that repository.

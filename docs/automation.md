@@ -41,7 +41,10 @@ For a pull request the checker:
    digest for every release asset and reports it in the API. The check requires
    it to equal `sha256`. If the asset is ever replaced, GitHub's digest changes
    and the listing stops matching. Artifacts are never downloaded, opened or
-   executed (see [artifact formats](artifact-formats.md)).
+   executed (see [artifact formats](artifact-formats.md)). The format check
+   still recognises `.ffpkg` and `.ffpfsc` names, so that a listing made before
+   ZIP became the only accepted format keeps validating; that a new listing or
+   a new release is a `.zip` is checked in review.
 6. **Reads the content version.** It looks for the release's `contentVersion`
    in the repository's `sce_sys/param.json` at the release tag and reports it.
    It warns, without failing, when there is none or when it isn't higher than
@@ -182,7 +185,8 @@ other repositories: nothing is downloaded and developers aren't contacted.
    whose listing pull request is open or was closed without merging.
 3. **Check,** strongest candidates first (600 per run): a published release
    with a `.zip`, `.ffpkg` or `.ffpfsc` file, then everything
-   `catalog draft` checks.
+   `catalog draft` checks. Only a `.zip` is accepted at the moment, so a
+   proposal whose file is an image is closed in review.
 4. **Propose.** An app with no blockers, a license GitHub detects and an icon
    next to its `param.json` gets a listing pull request on `listing/<TITLEID>`
    from the catalog's GitHub App (at most 10 new ones a run). The job guesses

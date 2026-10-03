@@ -69,7 +69,7 @@ The first eleven fields after `schema` are the app's record, exactly as in
 | `schema` | integer | Schema revision of this file; see [Versioning of the API](#versioning-of-the-api). |
 | `status` | string | `available`: the app has a release and can be installed. `coming_soon`: the title ID is [reserved](submitting.md#reserving-a-title-id) and nothing can be downloaded yet. |
 | `content_version` | string or null | The release's `contentVersion` from its `sce_sys/param.json`, in the PlayStation format `NN.NNN.NNN` (`01.000.070`). **This is the value to compare with an installed copy**; see [Finding updates](#finding-updates). `null` when it isn't known. |
-| `format` | string or null | `zip`, `ffpkg` or `ffpfsc`; see [Artifact formats](artifact-formats.md) for how each is installed. |
+| `format` | string or null | `zip` for every app accepted now: the app folder in an archive. A listing made before ZIP became the only accepted format can still be `ffpkg` or `ffpfsc` (an image file); a client that installs only `zip` should show such an app as not installable. See [Artifact formats](artifact-formats.md). |
 | `artifact_name` | string or null | File name of the download. |
 | `size` | integer or null | Size of the download in bytes. |
 | `tag` | string or null | The GitHub release tag. `version` is this tag, or this tag without a leading `v`. |
@@ -103,7 +103,8 @@ Rules that hold for every file:
    **Install nothing that doesn't match.** The developer replacing a release
    file changes its hash; the catalog's daily health check then flags the
    listing.
-3. Install according to `format` ([Artifact formats](artifact-formats.md)).
+3. Install according to `format` ([Artifact formats](artifact-formats.md)):
+   for `zip`, extract the app folder. Don't install a format you don't handle.
 
 `size` lets a client show progress and check free space first; when it is
 `null`, use the download's `Content-Length`.

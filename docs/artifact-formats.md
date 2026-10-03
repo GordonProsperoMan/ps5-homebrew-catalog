@@ -1,15 +1,34 @@
 # Artifact formats
 
-A listed artifact is a single release asset in one of these formats:
+**The catalog currently accepts one format: a `.zip` of the app folder.** New
+listings, and new releases of listed apps, must be a `.zip`.
 
 | Extension | Contents | Where it goes |
 | --- | --- | --- |
-| `.zip` | The app folder `<TITLEID>/` (with `eboot.bin` and `sce_sys/`) | Extract, then copy the folder to `/data/homebrew/` |
-| `.ffpkg` | UFS2 image with `sce_sys/param.json` at its root | Copy the file to `/data/homebrew/` |
-| `.ffpfsc` | Compressed PFS container holding a nested image | Copy the file to `/data/homebrew/` |
+| `.zip` | The app folder `<TITLEID>/` (with `eboot.bin` and `sce_sys/`) at the top of the archive | Extract, then copy the folder to `/data/homebrew/` |
 
 [ShadowMountPlus](https://github.com/drakmor/ShadowMountPlus) scans
-`/data/homebrew/` and mounts all three; it recommends `.ffpkg` for images.
+`/data/homebrew/` and registers the folder.
+
+## Why only ZIP
+
+The catalog feeds ProsperoStore, the console app store being built on the
+[store API](api.md). It installs, updates and removes apps as folders, and a
+`.zip` of the app folder is the one format it is designed to handle. One
+format also means one set of install steps on the website.
+
+## Image formats (`.ffpkg`, `.ffpfsc`)
+
+Image files (`.ffpkg`, a UFS2 image; `.ffpfsc`, a compressed PFS container) are
+**not accepted at the moment**. ShadowMountPlus can mount them, and they may be
+accepted again later.
+
+- A listing made before this rule that is an image stays listed as it is, and
+  its record keeps working. Its next release in the catalog must be a `.zip`.
+- You can still attach image files to your GitHub release for people who
+  prefer them. The catalog links the `.zip`.
+- The store API reports each app's `format`. A client that installs only
+  `zip` should show other formats as not installable rather than hide them.
 
 ## What the catalog verifies
 

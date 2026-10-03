@@ -15,7 +15,7 @@ only [reservations](#reservations-coming-soon) use `null`.
 | `author` | 64 | Developer or publisher name, as you want it credited. |
 | `version` | 32 | Version shown to users: the release tag in `artifact_url`, optionally without a leading `v` (tag `v0.2.0-alpha.1` → `0.2.0-alpha.1`). Letters, digits and `. + _ -`. Consoles find updates with the release's `contentVersion` instead, which the catalog reads from your repository; see [App versions](versioning.md). |
 | `source_repo` | 200 | `https://github.com/<owner>/<repository>`, using GitHub's exact capitalization. Must be public. |
-| `artifact_url` | 500 | `<source_repo>/releases/download/<tag>/<asset>` for a published release; the asset ends in `.zip`, `.ffpfsc` or `.ffpkg`. Moving links such as `/releases/latest/download/` are rejected. Unique across the catalog. |
+| `artifact_url` | 500 | `<source_repo>/releases/download/<tag>/<asset>` for a published release; the asset is a `.zip` of the app folder, the only [format](artifact-formats.md) accepted at the moment. Moving links such as `/releases/latest/download/` are rejected. Unique across the catalog. |
 | `sha256` | 64 | SHA-256 of the artifact as 64 lowercase hex characters. Unique across the catalog. |
 | `icon_url` | 500 | Direct HTTPS link ending in `.png`, `.jpg`, `.jpeg` or `.webp`, returning that image type, at most 2 MiB. Square; 512×512 recommended (the size of `sce_sys/icon0.png`), 256×256 at least. Larger images are scaled down to 512 px. Pin to a tag or commit. |
 
