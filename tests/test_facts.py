@@ -100,6 +100,24 @@ class FactsTests(unittest.TestCase):
         prune(self.cache, [])
         self.assertEqual(list((self.cache / "facts").iterdir()), [])
 
+    def test_moved_icon_asks_again(self):
+        # The content version is read beside the icon: an answer given for another icon is stale.
+        github = FakeGitHub()
+        cached(self.record, github, self.cache, self.fetch)
+        moved = Record(self.record.path, DATA | {"icon_url": DATA["icon_url"].replace("/v0.6.0/", "/0123abc/")})
+        self.assertNotEqual(moved.data["icon_url"], DATA["icon_url"])
+        cached(moved, github, self.cache, self.fetch)
+        self.assertEqual(github.calls, 2)
+        cached(moved, github, self.cache, self.fetch)                # and that answer is kept
+        self.assertEqual(github.calls, 2)
+        # An entry written before the icon was recorded is asked again too.
+        entry = self.cache / "facts" / ("a" * 64 + ".json")
+        saved = json.loads(entry.read_text())
+        del saved["icon_url"]
+        entry.write_text(json.dumps(saved))
+        cached(moved, github, self.cache, self.fetch)
+        self.assertEqual(github.calls, 3)
+
     def test_failed_lookup_is_reported_and_not_cached(self):
         facts, problem = cached(self.record, FakeGitHub(fail=True), self.cache, self.fetch)
         self.assertEqual(facts, Facts())

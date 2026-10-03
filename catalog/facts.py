@@ -12,7 +12,9 @@ its contentVersion isn't in the PlayStation format; clients then can't tell
 whether an installed copy is current.
 
 Facts belong to one exact file, so they are cached by the record's sha256 and
-looked up again only when an app moves to a new release.
+looked up again only when an app moves to a new release, or when its icon
+moves: the content version is read from the param.json beside the icon, so a
+record whose icon now points at a commit that holds one must be asked again.
 """
 
 from __future__ import annotations
@@ -103,9 +105,12 @@ def cached(record: Record, github: GitHub | None, cache: Path | None, fetch=None
     entry = cache / "facts" / f"{record.data['sha256']}.json" if cache else None
     if entry and entry.is_file():
         try:
-            return Facts(**json.loads(entry.read_text(encoding="utf-8"))), None
-        except (OSError, ValueError, TypeError):
-            entry.unlink(missing_ok=True)
+            saved = json.loads(entry.read_text(encoding="utf-8"))
+            if saved.pop("icon_url", None) == record.data["icon_url"]:
+                return Facts(**saved), None
+        except (OSError, ValueError, TypeError, AttributeError):
+            pass
+        entry.unlink(missing_ok=True)      # unreadable, or answered for another icon
     if github is None:
         return Facts(), None
     try:
@@ -114,7 +119,7 @@ def cached(record: Record, github: GitHub | None, cache: Path | None, fetch=None
         return Facts(), str(error)      # not cached: the next build asks again
     if entry:
         entry.parent.mkdir(parents=True, exist_ok=True)
-        entry.write_text(json.dumps(asdict(facts)), encoding="utf-8")
+        entry.write_text(json.dumps(asdict(facts) | {"icon_url": record.data["icon_url"]}), encoding="utf-8")
     return facts, None
 
 
