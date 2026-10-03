@@ -9,5 +9,5 @@
   "source_repo": "https://github.com/blackbearreloaded/ps5-opengl",
   "artifact_url": "https://github.com/blackbearreloaded/ps5-opengl/releases/download/v1.0.0/ps5-opengl-showcase-1.0.0-PPSA99005.zip",
   "sha256": "ddfa1fcd580c7b6745ecc6e075fcbb7b5e3180f11b049ade2ced9fc55d37c456",
-  "icon_url": "https://raw.githubusercontent.com/blackbearreloaded/ps5-opengl/464be47c711db2034712f94f4d822f1b18c79ed3/examples/core46-showcase/sce_sys/icon0.png"
+  "icon_url": "https://raw.githubusercontent.com/blackbearreloaded/ps5-opengl/5fdf9adbc24942de7209e949ddffd69eae9e82a6/examples/core46-showcase/sce_sys/icon0.png"
 }
