@@ -1,0 +1,13 @@
+{
+  "titleid": "PPSA69420",
+  "name": "ScreenTester5",
+  "kind": "tool",
+  "description": "Screen tester: solid colours and test patterns to find dead or stuck pixels, check uniformity and geometry, and run stuck-pixel recovery.",
+  "license": "GPL-3.0-or-later",
+  "author": "Marice",
+  "version": "01.000.000",
+  "source_repo": "https://github.com/Marice/ScreenTester5",
+  "artifact_url": "https://github.com/Marice/ScreenTester5/releases/download/01.000.000/PPSA69420.zip",
+  "sha256": "49a5c6d7bbb08f5a1539feb65b7fd2b537b6d7b304bdd3eed1c923e4ccbec8fd",
+  "icon_url": "https://raw.githubusercontent.com/Marice/ScreenTester5/01.000.000/sce_sys/icon0.png"
+}
