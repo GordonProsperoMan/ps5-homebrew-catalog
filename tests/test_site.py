@@ -59,6 +59,7 @@ class SiteBuildTests(unittest.TestCase):
         page = (self.out / "index.html").read_text(encoding="utf-8")
         self.assertIn('abc1234</a> · last updated <time datetime="2026-10-03T04:05:00Z">3 Oct 2026, 04:05 UTC</time>.',
                       page)
+        self.assertIn('Maintained by <a href="https://github.com/blackbearreloaded">BlackBearReloaded</a> · Built from', page)
         self.assertEqual(site._commit_time_html(None), "")
 
     def test_metadata_is_escaped(self):
