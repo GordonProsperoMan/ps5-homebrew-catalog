@@ -198,6 +198,7 @@ img { display: block; }
 
 .tv-hints { grid-area: hints; display: flex; justify-content: flex-end; gap: 1.8rem; margin-top: 1.2rem; font-size: 0.85rem; color: var(--muted); position: relative; z-index: 11; }
 .tv-hints span { display: inline-flex; align-items: center; gap: 0.5rem; }
+.tv-credit { margin: 0 auto 0 0; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .tv-hints b { font-weight: 400; }
 .tv-hints [data-grid-only] { transition: opacity 0.15s ease; }
 body.in-detail .tv-hints [data-grid-only] { display: none; }
