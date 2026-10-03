@@ -92,6 +92,11 @@ def source_commit() -> str:
         return "unknown"
 
 
+def source_commit_time(commit: str) -> str | None:
+    """When `commit` was made, as UTC ISO 8601: the time the catalog last changed. None when git can't say."""
+    return _utc((_git("show", "-s", "--format=%cI", commit) or "").strip() or None)
+
+
 def _git(*args: str) -> str | None:
     try:
         return subprocess.run(["git", *args], cwd=ROOT, check=True, capture_output=True, text=True).stdout
@@ -252,6 +257,15 @@ def _install_steps(record: Record) -> str:
 def _install_steps_text(record: Record) -> list[str]:
     """The install steps as plain text, for TV mode."""
     return [html.unescape(re.sub(r"<[^>]+>", "", step)) for step in re.findall(r"<li>(.*?)</li>", _install_steps(record))]
+
+
+def _commit_time_html(iso: str | None) -> str:
+    """The footer's "last updated" part; empty when the commit's time isn't known."""
+    if not iso:
+        return ""
+    from datetime import datetime
+    when = datetime.strptime(iso, "%Y-%m-%dT%H:%M:%SZ")
+    return f' · last updated <time datetime="{iso}">{when.day} {when:%b %Y, %H:%M} UTC</time>'
 
 
 def _utc(iso: str | None) -> str | None:
@@ -442,6 +456,7 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
         "theme_color": theme_obj.color,
         "commit": e(commit),
         "commit_short": e(commit[:7]),
+        "commit_time": _commit_time_html(source_commit_time(commit)),
         "app_count": total,
         "developer_count": len({r.data["author"].casefold() for r in records}),
         "game_count": len(kinds["game"]),

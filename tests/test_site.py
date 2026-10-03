@@ -53,6 +53,14 @@ class SiteBuildTests(unittest.TestCase):
         self.assertIn("/ps5/* /:splat 301", redirects)
         self.assertFalse((root / "list").exists())
 
+    def test_footer_shows_when_the_catalog_last_changed(self):
+        with mock.patch.object(site, "source_commit_time", lambda commit: "2026-10-03T04:05:00Z"):
+            self.build()
+        page = (self.out / "index.html").read_text(encoding="utf-8")
+        self.assertIn('abc1234</a> · last updated <time datetime="2026-10-03T04:05:00Z">3 Oct 2026, 04:05 UTC</time>.',
+                      page)
+        self.assertEqual(site._commit_time_html(None), "")
+
     def test_metadata_is_escaped(self):
         self.build()
         for page in (self.out / "index.html", self.out / "app" / "PPSA01234" / "index.html"):
