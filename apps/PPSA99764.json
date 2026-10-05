@@ -6,8 +6,8 @@
   "license": "GPL-3.0",
   "author": "Ruben Ripalda",
   "version": "1.1",
-  "source_repo": "https://github.com/elripalda/Porpoise",
-  "artifact_url": "https://github.com/elripalda/Porpoise/releases/download/v1.1/Porpoise-1.1.zip",
+  "source_repo": "https://github.com/elripalda/Porpoise-Dolphin-Emulator-for-PS5",
+  "artifact_url": "https://github.com/elripalda/Porpoise-Dolphin-Emulator-for-PS5/releases/download/v1.1/Porpoise-1.1.zip",
   "sha256": "6c216cc718e0fb4b7f301f90143203875af9e5819a34266deb9f19a105000bb2",
-  "icon_url": "https://raw.githubusercontent.com/elripalda/Porpoise/v1.1/sce_sys/icon0.png"
+  "icon_url": "https://raw.githubusercontent.com/elripalda/Porpoise-Dolphin-Emulator-for-PS5/v1.1/sce_sys/icon0.png"
 }
