@@ -1,0 +1,13 @@
+{
+  "titleid": "PPSA99640",
+  "name": "PS5 Homebrew Browser",
+  "kind": "app",
+  "description": "Native PS5 app for browsing and installing homebrew from the homebrew.page catalog, with signature and checksum checks.",
+  "license": "GPL-3.0",
+  "author": "TheRealRetro",
+  "version": "01.000.001",
+  "source_repo": "https://github.com/TheRealRetro/ps5-homebrew-browser",
+  "artifact_url": "https://github.com/TheRealRetro/ps5-homebrew-browser/releases/download/01.000.001/PPSA99640.zip",
+  "sha256": "7efa7a08beef4f915f43b689d9a6463d3e10eccea08fe0c42b649c81b281d015",
+  "icon_url": "https://raw.githubusercontent.com/TheRealRetro/ps5-homebrew-browser/01.000.001/native/sce_sys/icon0.png"
+}
