@@ -29,14 +29,31 @@ flowchart TB
 
     checks["Automated checks<br/>format · publisher · release and tag · sha256 from GitHub's digest · icon"]
     review["Maintainer reviews and merges"]
-    site["homebrew.page, rebuilt from main<br/>cards and list · TV mode · store API"]
-    user["User downloads straight from the developer's release,<br/>verified by sha256"]
+    build["Build from main, deployed to homebrew.page"]
+
+    subgraph out["What the build publishes"]
+        direction LR
+        site["Website<br/>store front · app pages · TV mode"]
+        api["Store API, signed<br/>records · versions · sizes · icons"]
+    end
+
+    subgraph readers["Who reads it"]
+        direction LR
+        browser["Browser on a PC, phone or the PS5"]
+        store["ProsperoStore on the PS5<br/>browses, installs and updates apps"]
+        apps["Listed apps<br/>check for their own updates"]
+    end
+
+    download["Download straight from the developer's release,<br/>verified by sha256"]
     health["Health check, daily<br/>re-verifies listed releases, all of them each week"]
 
     release --> dev & discovery & updates
     dev & discovery & updates --> checks
-    checks --> review --> site --> user
-    release -. artifact_url .-> user
+    checks --> review --> build --> site & api
+    site --> browser
+    api --> store & apps
+    browser & store & apps --> download
+    release -. artifact_url .-> download
     health -. reports broken listings .-> review
 ```
 
@@ -50,9 +67,12 @@ flowchart TB
 3. Automation verifies the record, the publisher, the release and its tag, the
    exact bytes (sha256, from GitHub's digest; nothing is downloaded), and the icon.
 4. A maintainer reviews and merges; nothing is listed automatically. The website
-   (cards, list and TV mode) and the [store API](docs/api.md) are rebuilt from
-   `main`.
-5. A daily health check re-verifies the listed releases (the whole catalog each
+   (store front, app pages and TV mode) and the signed [store API](docs/api.md)
+   are rebuilt from `main`.
+5. People browse the website; [ProsperoStore](https://github.com/blackbearreloaded/ProsperoStore)
+   reads the store API on the PS5 to browse, install and update apps; and a
+   listed app can read it to tell its user that an update exists.
+6. A daily health check re-verifies the listed releases (the whole catalog each
    week) and reports any that broke.
 
 Downloads always come from the developer's own release, pinned by sha256, so a
@@ -154,9 +174,9 @@ to run on untrusted pull requests.
 ## Website
 
 GitHub Actions rebuilds the store from `main` after every merge and deploys it
-to Cloudflare Pages. The catalog
-page switches between cards and a list in place, with shared search, filters
-and sorting; app pages open without reloads; it works on phones, has a TV mode for the PS5 browser and smart TVs
+to Cloudflare Pages. The front
+page is a store front: featured apps over shelves, with sections for apps, games
+and tools, search and sorting; each app has its own page, coloured from its icon; it works on phones, has a TV mode for the PS5 browser and smart TVs
 (controller-driven, inspired by [tv4play](https://github.com/ps5-payload-dev/tv4play)), and shows when each app was last updated. See **[Website](docs/website.md)** for the output, themes, local
 preview and the Cloudflare deployment (no Cloudflare credentials in the
 repository).
