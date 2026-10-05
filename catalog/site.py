@@ -404,6 +404,7 @@ def write_api(root: Path, url: str, records: list[Record], report: Report, *, up
     304. Only the index carries the build's commit and time.
     """
     from . import facts as release_facts
+    from . import notes as release_notes
     from datetime import datetime, timezone
     large, small = API_ICON_SIZES
     index, versions = [], {}
@@ -414,6 +415,7 @@ def write_api(root: Path, url: str, records: list[Record], report: Report, *, up
             report.warning(name, f"release facts not included in the API this time: {problem}")
         elif github is not None and not record.reserved and facts.content_version is None:
             report.notice(name, "no contentVersion found for this release; clients can't check it for updates")
+        notes_text, notes_cut = release_notes.as_text(facts.notes)
         icon = {}
         for size, suffix in ((large, ""), (small, f"-{small}")):
             content = icons.get(titleid, {}).get(size)
@@ -433,6 +435,9 @@ def write_api(root: Path, url: str, records: list[Record], report: Report, *, up
             "released": facts.released,
             "prerelease": facts.prerelease,
             "release_url": None if record.reserved else f"{d['source_repo']}/releases/tag/{quote(record.tag, safe='')}",
+            # The developer's own words, as plain text; the full notes are at release_url.
+            "release_notes": notes_text,
+            "release_notes_truncated": notes_cut if notes_text else None,
             "updated": _utc(updated.get(record.path.name)),
             "page": page(record),
             "icon": icon.get(large),
@@ -535,7 +540,19 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
     updated = last_updated(apps_dir)
     # Release facts (size, dates), asked once: the pages show the size, the API publishes all.
     from . import facts as release_facts
+    from . import notes as release_notes
     known = {r.titleid: release_facts.cached(r, github, icon_cache) for r in records}
+
+    def notes_section(record: Record, release_url: str) -> str:
+        """The "Release notes" part of an app's page; nothing when the release has no notes."""
+        body, cut = release_notes.as_html(known[record.titleid][0].notes)
+        if not body:
+            return ""
+        more = "Read the full notes on GitHub" if cut else "See this release on GitHub"
+        return ('<h2 id="notes-title">Release notes</h2>\n'
+                f'<div class="notes">\n{body}\n</div>\n'
+                f'<p class="notes__source">Written by {e(record.data["author"])} for {e(version_label(record.data["version"]))}. '
+                f'<a href="{e(release_url)}" rel="nofollow">{more}</a></p>')
 
     def page_url(record: Record) -> str:
         return f"{base}app/{record.titleid}/"
@@ -563,6 +580,8 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
                 version_label=e(version_label(d["version"])),
                 release_url=e(f"{d['source_repo']}/releases/tag/{d['artifact_url'].split('/releases/download/')[1].split('/')[0]}"),
                 tag=e(record.tag),
+                notes=notes_section(
+                    record, f"{d['source_repo']}/releases/tag/{d['artifact_url'].split('/releases/download/')[1].split('/')[0]}"),
             )
         values.update(
             number=f"{number:03d}",

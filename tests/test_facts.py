@@ -26,12 +26,13 @@ class FakeGitHub:
         self.files = files or {}
         self.fail = fail
         self.calls = 0
+        self.body = None
 
     def release_by_tag(self, owner, name, tag):
         self.calls += 1
         if self.fail:
             raise GitHubError("GitHub API rate limit reached")
-        return {"published_at": "2026-09-01T10:00:00Z", "prerelease": True,
+        return {"published_at": "2026-09-01T10:00:00Z", "prerelease": True, "body": self.body,
                 "assets": [{"name": "PPSA01234.zip", "size": 4096}, {"name": "other.zip", "size": 1}]}
 
     def tree(self, owner, name, ref):
@@ -116,6 +117,31 @@ class FactsTests(unittest.TestCase):
         del saved["icon_url"]
         entry.write_text(json.dumps(saved))
         cached(moved, github, self.cache, self.fetch)
+        self.assertEqual(github.calls, 3)
+
+    def test_notes_are_asked_again_after_a_day(self):
+        import os
+        import time
+        github = FakeGitHub()
+        github.body = "First words."
+        entry = self.cache / "facts" / ("a" * 64 + ".json")
+        self.assertEqual(cached(self.record, github, self.cache, self.fetch)[0].notes, "First words.")
+        github.body = "Edited words."
+        self.assertEqual(cached(self.record, github, self.cache, self.fetch)[0].notes, "First words.")   # still fresh
+        old = time.time() - 2 * 86400
+        os.utime(entry, (old, old))
+        self.assertEqual(cached(self.record, None, self.cache)[0].notes, "First words.")                # offline
+        self.assertEqual(cached(self.record, github, self.cache, self.fetch)[0].notes, "Edited words.")
+        self.assertEqual(github.calls, 2)
+        # GitHub can't answer: the older answer keeps serving, without a warning.
+        os.utime(entry, (old, old))
+        self.assertEqual(cached(self.record, FakeGitHub(fail=True), self.cache, self.fetch),
+                         (cached(self.record, None, self.cache)[0], None))
+        # An entry written before notes were read is asked again.
+        saved = json.loads(entry.read_text())
+        del saved["notes"]
+        entry.write_text(json.dumps(saved))
+        cached(self.record, github, self.cache, self.fetch)
         self.assertEqual(github.calls, 3)
 
     def test_failed_lookup_is_reported_and_not_cached(self):

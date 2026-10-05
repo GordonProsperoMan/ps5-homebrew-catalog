@@ -107,7 +107,8 @@ class SiteBuildTests(unittest.TestCase):
         self.assertEqual(app["release_url"], "https://github.com/example/example-app/releases/tag/01.000.000")
         # An offline build knows no release facts and has no icons; the fields are present and null.
         self.assertEqual([app[k] for k in ("size", "released", "prerelease", "content_version", "icon", "icon_small",
-                                           "icon_hash")], [None] * 7)
+                                           "icon_hash", "release_notes", "release_notes_truncated")], [None] * 9)
+        self.assertNotIn("notes-title", (self.out / "app" / "PPSA01234" / "index.html").read_text(encoding="utf-8"))
         soon = json.loads((api / "apps" / "PPSA05555.json").read_text(encoding="utf-8"))
         self.assertEqual((soon["status"], soon["artifact_url"], soon["format"], soon["tag"]),
                          ("coming_soon", None, None, None))
@@ -135,7 +136,9 @@ class SiteBuildTests(unittest.TestCase):
     def test_api_release_facts_and_icons(self):
         from catalog import facts as facts_module
         known = facts_module.Facts(size=4096, released="2026-09-01T10:00:00Z", prerelease=False,
-                                   content_version="01.000.000", param_path="sce_sys/param.json")
+                                   content_version="01.000.000", param_path="sce_sys/param.json",
+                                   notes="## Fixed\n- <b>Menus</b> open [faster](https://example.com) "
+                                         "<script>alert(1)</script>\n\n**Full Changelog**: https://x/y")
         png = b"\x89PNG\r\n\x1a\n\x00\x00\x00\x0dIHDR" + (512).to_bytes(4, "big") * 2
         with mock.patch.object(site, "_icon", lambda url, cache: (png, "png", png)), \
                 mock.patch.object(site, "png_icons", lambda data: {512: b"large", 256: b"small"}), \
@@ -146,6 +149,13 @@ class SiteBuildTests(unittest.TestCase):
         app = json.loads((api / "apps" / "PPSA01234.json").read_text(encoding="utf-8"))
         self.assertEqual((app["size"], app["released"], app["prerelease"], app["content_version"]),
                          (4096, "2026-09-01T10:00:00Z", False, "01.000.000"))
+        self.assertEqual((app["release_notes"], app["release_notes_truncated"]),
+                         ("Fixed\n- Menus open faster alert(1)", False))
+        page = (self.out / "app" / "PPSA01234" / "index.html").read_text(encoding="utf-8")
+        self.assertIn('<h2 id="notes-title">Release notes</h2>', page)
+        self.assertIn("<li>Menus open faster alert(1)</li>", page)
+        self.assertNotIn("<script>alert", page)
+        self.assertIn('rel="nofollow">See this release on GitHub</a>', page)
         self.assertEqual(app["icon"], "https://homebrew.page/api/v1/icons/PPSA01234.png")
         self.assertEqual(app["icon_small"], "https://homebrew.page/api/v1/icons/PPSA01234-256.png")
         self.assertEqual((api / "icons" / "PPSA01234-256.png").read_bytes(), b"small")

@@ -53,6 +53,8 @@ still published and unchanged; new clients should use the API.
   "released": "2026-09-22T18:23:50Z",
   "prerelease": false,
   "release_url": "https://github.com/sainsaji/EVO-PLAYER-PS5/releases/tag/v0.10.0",
+  "release_notes": "EVO is a real PS5 app now. It runs as a game-category app module, …\n\nA Real Application\n- Game-category app module (PPSA99039). …",
+  "release_notes_truncated": true,
   "updated": "2026-09-29T17:20:37Z",
   "page": "https://homebrew.page/app/PPSA99039/",
   "icon": "https://homebrew.page/api/v1/icons/PPSA99039.png",
@@ -76,6 +78,8 @@ The first eleven fields after `schema` are the app's record, exactly as in
 | `released` | string or null | When the developer published the release. |
 | `prerelease` | boolean or null | Whether the developer marked the release as a pre-release. The catalog lists an app's newest release, pre-releases included. |
 | `release_url` | string or null | The release's page on GitHub, with the developer's notes. |
+| `release_notes` | string or null | What the developer wrote on the listed release, as plain text: at most 4,000 characters, lines separated by `\n`, list items starting with `- `, and a blank line before each heading or new paragraph. `null` when the release has no notes (empty, or only GitHub's generated changelog link) and for `coming_soon` apps. See [Release notes](#release-notes). |
+| `release_notes_truncated` | boolean or null | `true` when the notes were longer than the limit and were cut at the end of a block; the rest is at `release_url`. `null` when `release_notes` is. |
 | `updated` | string or null | When the app's record last changed in the catalog. |
 | `page` | string | The app's page on the website. |
 | `icon` | string or null | PNG icon, at most 512 px on its longer side. |
@@ -108,6 +112,26 @@ Rules that hold for every file:
 
 `size` lets a client show progress and check free space first; when it is
 `null`, use the download's `Content-Length`.
+
+### Release notes
+
+`release_notes` answers "what is in this version?" for a store's app page or
+update screen. It is only in this file, not in the index or the version map.
+
+- **It is the developer's text, not the catalog's.** Nobody reviews it, and the
+  developer can change it at any time; the catalog reads it again when the
+  site is rebuilt, at most once a day. Show it as the developer's words. It is covered by the catalog's
+  signature like the rest of the file, which proves only that the catalog
+  published it.
+- **It is plain text.** The build reads the release's GitHub Markdown and keeps
+  headings, paragraphs and list items; images are dropped, links keep their
+  text, tables become one line per row, and raw HTML keeps only what it
+  encloses. A client needs no Markdown or HTML parser: split on `\n`, and
+  treat a line that starts with `- ` as a list item if it wants bullets.
+- **It can be any language** the developer wrote in, with any Unicode
+  characters, emoji included; draw what the font has and skip the rest.
+- **It is often more than a list of changes.** Many releases also carry install
+  steps or requirements, and a first release usually describes the app.
 
 ## The list: `index.json`
 
@@ -353,6 +377,7 @@ icon, as for any other file, at the cost of one request per icon.
 | 1 | 2026-10-02 | First version: `versions.json`, `index.json`, `apps/<TITLEID>.json`, PNG icons. |
 | 2 | 2026-10-02 | Added `icon_hash` to app files and index entries, so clients can cache icons without requests. |
 | 3 | 2026-10-02 | Added `manifest.json` and `manifest.sig`: the catalog is signed. |
+| 3 | 2026-10-05 | Added `release_notes` and `release_notes_truncated` to app files. `schema` stays 3: a released store accepts only that exact number, so it is raised with the next change that store has been prepared for. Test for the field, not for the number. |
 
 ## Where the values come from
 
@@ -360,7 +385,8 @@ icon, as for any other file, at the cost of one request per icon.
 | --- | --- | --- |
 | The eleven record fields | `apps/<TITLEID>.json`, reviewed and merged by a maintainer | On every pull request, push and in the daily health check |
 | `sha256` | The record; it must equal the digest GitHub computes for the file | Same |
-| `size`, `released`, `prerelease` | GitHub's API for the release | Read when the release is first built into the site, then cached for that file |
+| `size`, `released`, `prerelease` | GitHub's API for the release | Read when the release is first built into the site, then again at a rebuild, at most once a day |
+| `release_notes` | The release's notes in GitHub's API, reduced to plain text | Same |
 | `content_version` | `sce_sys/param.json` in the app's repository at the release tag | Same; see [App versions](versioning.md) |
 | `updated` | The record's history in this repository | Every build |
 | Icons | `icon_url`, converted to PNG | Every build, cached |

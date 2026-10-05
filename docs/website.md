@@ -45,6 +45,12 @@ dist/
 - **Updated dates.** Each app shows when its record last changed on `main`,
   taken from the git history of `apps/<TITLEID>.json`. The build deepens a
   shallow clone first so dates stay correct in CI.
+- **Release notes.** An app's page shows what its developer wrote on the listed
+  GitHub release, read from GitHub at build time (again at most once a day,
+  since developers edit them). The text is the developer's and nobody reviews
+  it, so only headings, paragraphs and lists are kept: images, links' targets
+  and raw HTML are dropped (`catalog/notes.py`). Long notes are cut, with a
+  link to the release; a release without notes has no such section.
 - **Coming soon.** Title ID reservations appear as cards with the shared
   "Coming soon" picture (`site/shared/coming-soon.png`) in place of an icon,
   and no download; see [Reserving a title ID](submitting.md#reserving-a-title-id).
