@@ -100,8 +100,7 @@ class DiscoverTests(unittest.TestCase):
         github = FakeGitHub()
         github.owner.setdefault("example", [])
         result = discover(github, self.apps, set(), sleep=lambda s: None,
-                          out_of_scope=read_scope("@Dev, someone-else
-"))
+                          out_of_scope=read_scope("@Dev, someone-else"))
         self.assertEqual({c.repo for c in result.candidates}, {"example/example-app", "Other/Desktop-Tool"})
         self.assertNotIn("dev", render(result).casefold().replace("developer", ""))
         self.assertEqual(result.warnings, [])
