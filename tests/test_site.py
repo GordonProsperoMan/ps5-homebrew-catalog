@@ -8,6 +8,12 @@ from catalog.report import Report
 from catalog import site
 from catalog.site import THEMES, build_site
 
+try:
+    import PIL  # noqa: F401
+    HAVE_PILLOW = True
+except ImportError:
+    HAVE_PILLOW = False
+
 from helpers import record, reservation, write_record
 
 
@@ -26,6 +32,15 @@ class SiteBuildTests(unittest.TestCase):
 
     def tearDown(self):
         self.tmp.cleanup()
+
+    @staticmethod
+    def icon_png():
+        """A 64 x 64 plain red PNG."""
+        import io
+        from PIL import Image
+        output = io.BytesIO()
+        Image.new("RGB", (64, 64), (255, 0, 0)).save(output, "PNG")
+        return output.getvalue()
 
     def build(self, **options):
         report = Report()
@@ -60,7 +75,7 @@ class SiteBuildTests(unittest.TestCase):
         self.assertIn('abc1234</a> · last updated <time datetime="2026-10-03T04:05:00Z">3 Oct 2026, 04:05 UTC</time>.',
                       page)
         self.assertIn('Maintained by <a href="https://github.com/blackbearreloaded">BlackBearReloaded</a> · Built from', page)
-        self.assertIn('<aside class="announce"', page)
+        self.assertIn('<a class="notice"', page)
         self.assertIn('href="https://github.com/blackbearreloaded/ProsperoStore"', page)
         tv = (self.out / "tv" / "index.html").read_text(encoding="utf-8")
         self.assertIn('<p class="tv-credit">Maintained by BlackBearReloaded · Built from abc1234 · last updated '
@@ -181,11 +196,52 @@ class SiteBuildTests(unittest.TestCase):
         self.assertNotIn("rel=\"nofollow\"", page)
         self.assertNotIn("None", page)
         html = (root / "index.html").read_text(encoding="utf-8")
-        self.assertEqual(html.count('data-status="soon"'), 2)
+        self.assertEqual(html.count('data-status="soon"'), 1)
+        self.assertIn('class="tile tile--soon', html)
         self.assertIn('data-status="available"', html)
 
-    def test_catalog_page_holds_both_views_and_filters(self):
+    def test_catalog_page_is_the_store_front(self):
         self.build()
+        html = (self.out / "index.html").read_text(encoding="utf-8")
+        self.assertEqual(html.count('class="tile-item"'), 3)
+        for hook in ("data-tabs", "data-stage", "data-shelves", "data-tiles", "data-search", "data-sort",
+                     'data-section="soon"', 'data-base="/"'):
+            self.assertIn(hook, html)
+        # The content security policy allows no inline styles: colours come from the stylesheet.
+        for page in self.out.rglob("*.html"):
+            self.assertNotIn(" style=", page.read_text(encoding="utf-8"), page)
+
+    def test_sizes_are_worded_as_people_say_them(self):
+        self.assertEqual((site.size_label(38_797_312), site.size_label(1_500_000), site.size_label(None)),
+                         ("37 MB", "1.4 MB", ""))
+
+    def test_a_build_without_pillow_uses_the_themes_own_picture(self):
+        with mock.patch.object(site, "make_ambient", lambda icon: None):
+            self.build()
+        html = (self.out / "index.html").read_text(encoding="utf-8")
+        self.assertEqual(len(list((self.out / "assets").glob("ambient.*.png"))), 1)
+        self.assertIn('data-accent="#42358f"', html)
+
+    @unittest.skipUnless(HAVE_PILLOW, "needs Pillow")
+    def test_each_app_gets_its_picture_and_colour(self):
+        png = self.icon_png()
+        with mock.patch.object(site, "_icon", lambda url, cache: (png, "png", png)):
+            self.build(fetch_icons=True)
+        html = (self.out / "index.html").read_text(encoding="utf-8")
+        pictures = sorted(path.name for path in (self.out / "assets").glob("ambient-*.png"))
+        self.assertEqual([name.split(".")[0] for name in pictures],
+                         ["ambient-PPSA01234", "ambient-PPSA04321", "ambient-PPSA05555"])
+        self.assertIn(f'src="/assets/{pictures[0]}"', html)
+        css = next((self.out / "assets").glob("farlight.*.css")).read_text(encoding="utf-8")
+        # The test icon is plain red; the reservation takes its colour from the shared picture.
+        self.assertIn(".tone-PPSA01234{--tone:#ff0000}", css)
+        self.assertRegex(css, r"\.tone-PPSA05555\{--tone:#[0-9a-f]{6}\}")
+        self.assertIn('data-accent="#ff0000"', html)
+        # A grey icon, or none, gets the theme's own violet.
+        self.assertEqual(site.make_ambient(None)[1], "#42358f")
+
+    def test_holo_catalog_page_holds_both_views_and_filters(self):
+        self.build(theme="holo")
         html = (self.out / "index.html").read_text(encoding="utf-8")
         self.assertEqual(html.count('class="lrow '), 3)
         self.assertEqual(html.count('class="card-item"'), 3)

@@ -1,0 +1,62 @@
+<article class="page tone-$titleid" data-accent="$accent" aria-labelledby="app-title">
+  <div class="page__art" aria-hidden="true"><img src="$ambient" alt="" width="96" height="54"></div>
+  <div class="page__shade" aria-hidden="true"></div>
+  <div class="page__inner">
+    <div class="page__main">
+      <a class="back" href="$base"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>All apps</a>
+      <div class="page__cover"><img src="$icon" alt="$name icon" width="512" height="512"><span class="page__sheen" aria-hidden="true"></span></div>
+      <p class="kicker kicker--plain">$kind_label</p>
+      <h1 class="page__title" id="app-title">$name</h1>
+      <p class="page__line">$author<span class="sep" aria-hidden="true">·</span>Updated <time datetime="$updated_iso">$updated</time></p>
+      <ul class="chips" aria-label="Release facts">
+        <li>$version_label</li>
+        <li>$size_label</li>
+        <li>$license</li>
+        <li class="chips__caps">$format</li>
+      </ul>
+      <div class="article">
+        <p class="article__lead">$description</p>
+
+        <h2 id="install-title">Install</h2>
+        <p class="article__note">Read the <a href="$release_url">release notes</a> and the <a href="$source_repo">project's documentation</a> first. Some apps need extra setup, such as a payload, configuration or additional files, and the developer's instructions take precedence over the general steps below.</p>
+        <ol class="steps">
+$steps
+        </ol>
+
+        <h2 id="verify-title">Verify</h2>
+        <p>This listing is pinned to one exact file. <code>sha256sum $artifact_name</code> must print:</p>
+        <div class="hash"><code>$sha256</code><button type="button" class="copy" data-copy="$sha256">Copy</button></div>
+        <p class="article__note">This app and its content are the responsibility of its developer, $author. Homebrew runs with elevated access on a jailbroken console; install only what you trust.</p>
+
+        <h2 id="source-title">Source</h2>
+        <p><a href="$source_repo">$source_short</a><span class="sep" aria-hidden="true">·</span><a href="$release_url">Release $tag</a></p>
+
+        <h2 id="details-title">Details</h2>
+        <dl class="facts">
+          <div><dt>Title ID</dt><dd>$titleid</dd></div>
+          <div><dt>Version</dt><dd>$version</dd></div>
+          <div><dt>Format</dt><dd>$format_label</dd></div>
+          <div><dt>License</dt><dd>$license</dd></div>
+          <div><dt>File</dt><dd>$artifact_name</dd></div>
+          <div><dt>Updated</dt><dd><time datetime="$updated_iso">$updated</time></dd></div>
+        </dl>
+      </div>
+    </div>
+    <aside class="side" aria-label="Get this app">
+      <div class="panel">
+        <p class="panel__kicker">Get this app</p>
+        <div class="panel__ring" aria-hidden="true"><svg viewBox="0 0 48 48" width="56" height="56"><path d="M24 8v30M24 38l-12-12M24 38l12-12" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <p class="panel__headline">Ready</p>
+        <p class="panel__note">Straight from the developer's GitHub release</p>
+        <p class="panel__where">$artifact_name</p>
+        <a class="button button--gold" href="$artifact_url" rel="nofollow"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 4v12M12 16l-5-5M12 16l5-5M5 20h14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Download</a>
+        <a class="button button--line" href="$source_repo">Source code</a>
+        <p class="panel__reason">Pinned to one exact file by its SHA-256. Compare it before you install.</p>
+      </div>
+      <a class="store" href="https://github.com/blackbearreloaded/ProsperoStore">
+        <span class="store__mark" aria-hidden="true"></span>
+        <span class="store__text"><b>On your PS5?</b>Install and update it from the couch with ProsperoStore.</span>
+      </a>
+    </aside>
+  </div>
+</article>

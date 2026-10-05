@@ -57,8 +57,12 @@ FONT_URL = "https://fonts.googleapis.com/css2?{families}&display=swap"
 THEMES = {
     # name: (Google Fonts families, browser theme-color)
     "holo": ("family=Unbounded:wght@500;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700", "#0b0b10"),
+    # ProsperoStore's look: its colours, faces and shapes (docs/website.md).
+    "farlight": ("family=Inter:wght@400;600&family=Montserrat:wght@500", "#0e0f24"),
 }
-DEFAULT_THEME = "holo"
+# Themes that show each app over a picture made from its icon's colours, as ProsperoStore does.
+AMBIENT_THEMES = {"farlight"}
+DEFAULT_THEME = "farlight"
 FORMAT_LABELS = {"zip": "ZIP folder", "ffpkg": "FFPKG image", "ffpfsc": "FFPFSC image"}
 KIND_LABELS = {"app": "App", "game": "Game", "tool": "Tool"}
 KIND_PLURALS = {"app": "Apps", "game": "Games", "tool": "Tools"}
@@ -191,6 +195,115 @@ def process_icon(data: bytes) -> tuple[bytes, str]:
     return output.getvalue(), "webp"
 
 
+def size_label(size: int | None) -> str:
+    """"31.8 MB", "548 GB": sizes as people say them, as ProsperoStore words them."""
+    if not size:
+        return ""
+    megabytes = size / (1024 * 1024)
+    if megabytes >= 10240:
+        return f"{megabytes / 1024:.0f} GB"
+    if megabytes >= 1024:
+        return f"{megabytes / 1024:.1f} GB"
+    return f"{megabytes:.0f} MB" if megabytes >= 10 else f"{megabytes:.1f} MB"
+
+
+def make_ambient(icon: bytes | None) -> tuple[bytes, str] | None:
+    """An app's ambient picture and main colour, from its icon: (PNG, "#rrggbb").
+
+    The same picture ProsperoStore makes (its src/app/ambient.hpp): the icon's
+    two main hues painted as soft light over the theme's dark in a 96 x 54
+    field that stays dark enough for white words. A grey icon, or none, gets
+    the theme's own violet. None without Pillow.
+    """
+    try:
+        from PIL import Image
+    except ImportError:
+        return None
+    deep, violet, blue = (0x0e / 255, 0x0f / 255, 0x24 / 255), (0x42 / 255, 0x35 / 255, 0x8f / 255), (0x24 / 255, 0x4a / 255, 0xb8 / 255)
+
+    def mix(a, b, k):
+        return tuple(a[i] + (b[i] - a[i]) * k for i in range(3))
+
+    # The colourful pixels by hue, 12 buckets of 30 degrees, weighted by saturation and
+    # brightness: greys, blacks and whites do not vote.
+    sums, weights = [[0.0, 0.0, 0.0] for _ in range(12)], [0.0] * 12
+    if icon:
+        try:
+            with Image.open(io.BytesIO(icon)) as image:
+                image = image.convert("RGBA")
+                width, height = image.size
+                pixels = image.load()
+                for y in range(0, height, 4):
+                    for x in range(0, width, 4):
+                        r, g, b, a = pixels[x, y]
+                        if a < 128:
+                            continue
+                        c = (r / 255, g / 255, b / 255)
+                        hi, lo = max(c), min(c)
+                        chroma = hi - lo
+                        if hi < 0.2 or chroma < 0.18:
+                            continue
+                        if hi == c[0]:
+                            hue = ((c[1] - c[2]) / chroma + 6.0) % 6.0
+                        elif hi == c[1]:
+                            hue = (c[2] - c[0]) / chroma + 2.0
+                        else:
+                            hue = (c[0] - c[1]) / chroma + 4.0
+                        bucket = int(hue * 2.0) % 12
+                        weight = chroma * hi
+                        for i in range(3):
+                            sums[bucket][i] += c[i] * weight
+                        weights[bucket] += weight
+        except (OSError, ValueError):
+            pass
+    # The main colour is the strongest hue; the second, the strongest at least 60 degrees away
+    # with a real share of the icon.
+    first = max(range(12), key=lambda i: weights[i]) if any(weights) else -1
+    second = -1
+    if first >= 0:
+        for i in range(12):
+            apart = min((i - first) % 12, (first - i) % 12)
+            if apart >= 2 and weights[i] >= 0.12 * weights[first] and (second < 0 or weights[i] > weights[second]):
+                second = i
+
+    def colour_of(i):
+        c = tuple(v / weights[i] for v in sums[i])
+        hi = max(c)
+        return tuple(v / hi for v in c)
+
+    if first >= 0:
+        main = colour_of(first)
+        other = colour_of(second) if second >= 0 else mix(main, violet, 0.55)
+        accent = "#%02x%02x%02x" % tuple(int(v * 255 + 0.5) for v in main)
+    else:
+        main, other, accent = mix(violet, (1.0, 1.0, 1.0), 0.25), blue, "#42358f"
+
+    # Paint: the dark, the main colour high on the right (where the stage puts the icon), the
+    # second low on the left, both meeting low right.
+    width, height = 96, 54
+    aspect = width / height
+    blobs = ((main, 0.80, 0.28, 0.78, 0.82), (other, 0.14, 0.96, 0.85, 0.62), (mix(main, other, 0.5), 1.04, 1.06, 0.62, 0.5))
+    base = mix(deep, main, 0.14)
+    data = bytearray()
+    for y in range(height):
+        for x in range(width):
+            u, v = (x + 0.5) / width, (y + 0.5) / height
+            c = base
+            for colour, bx, by, radius, strength in blobs:
+                dx, dy = (u - bx) * aspect, v - by
+                d = (dx * dx + dy * dy) ** 0.5 / radius
+                if d < 1.0:
+                    c = mix(c, colour, strength * (1.0 - d * d) ** 2)
+            # Never brighter than the words allow.
+            light = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+            if light > 0.36:
+                c = tuple(v * 0.36 / light for v in c)
+            data.extend(int(min(max(v, 0.0), 1.0) * 255 + 0.5) for v in c)
+    output = io.BytesIO()
+    Image.frombytes("RGB", (width, height), bytes(data)).save(output, "PNG", optimize=True)
+    return output.getvalue(), accent
+
+
 def png_icons(data: bytes) -> dict[int, bytes]:
     """PNG copies for native clients, by longest side; they may not decode WebP. Needs Pillow to resize."""
     try:
@@ -283,7 +396,7 @@ def _write_json(path: Path, value) -> None:
 
 def write_api(root: Path, url: str, records: list[Record], report: Report, *, updated: dict[str, str], page,
               icons: dict[str, dict[int, bytes]], icon_hashes: dict[str, str], commit: str, github=None,
-              cache: Path | None = None) -> None:
+              cache: Path | None = None, known: dict | None = None) -> None:
     """The store API (docs/api.md): one file per app, a browse index and a version map, plus PNG icons.
 
     Per-app files and the version map hold nothing that changes between builds
@@ -296,7 +409,7 @@ def write_api(root: Path, url: str, records: list[Record], report: Report, *, up
     index, versions = [], {}
     for record in sorted(records, key=lambda r: r.titleid):
         d, titleid, name = record.data, record.titleid, f"apps/{record.path.name}"
-        facts, problem = release_facts.cached(record, github, cache)
+        facts, problem = (known or {}).get(titleid) or release_facts.cached(record, github, cache)
         if problem:
             report.warning(name, f"release facts not included in the API this time: {problem}")
         elif github is not None and not record.reserved and facts.content_version is None:
@@ -362,18 +475,24 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
     root.mkdir(parents=True, exist_ok=True)
     assets = Assets(root / "assets", base + "assets/")
     shared_dir = SITE / "shared"
-    css = assets.add(f"{theme}", "css", (theme_obj.directory / "style.css").read_bytes())
-    js = assets.add("app", "js", (shared_dir / "app.js").read_bytes())
+    # A theme may bring its own script and favicon; otherwise the shared ones are used.
+    own = {name: theme_obj.directory / name for name in ("app.js", "favicon.svg")}
+    js = assets.add("app", "js", (own["app.js"] if own["app.js"].is_file() else shared_dir / "app.js").read_bytes())
     placeholder = assets.add("placeholder", "svg", (shared_dir / "placeholder.svg").read_bytes())
-    shutil.copyfile(shared_dir / "favicon.svg", root / "favicon.svg")
+    shutil.copyfile(own["favicon.svg"] if own["favicon.svg"].is_file() else shared_dir / "favicon.svg",
+                    root / "favicon.svg")
 
     icons: dict[str, str] = {}
     api_icons: dict[str, dict[int, bytes]] = {}
     icon_hashes: dict[str, str] = {}
     # A reservation has no icon of its own yet: it gets the shared "coming soon" picture.
-    coming_soon = assets.add("coming-soon", *reversed(process_icon((shared_dir / "coming-soon.png").read_bytes())))
+    coming_soon_source = (shared_dir / "coming-soon.png").read_bytes()
+    coming_soon = assets.add("coming-soon", *reversed(process_icon(coming_soon_source)))
+    originals: dict[str, bytes] = {}
     for record in records:
         icons[record.titleid] = coming_soon if record.reserved else placeholder
+        if record.reserved:
+            originals[record.titleid] = coming_soon_source
         if not fetch_icons or record.data["icon_url"] is None:
             continue
         try:
@@ -384,6 +503,26 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
             report.warning(f"apps/{record.path.name}", f"icon not included, using a placeholder: {error}")
             continue
         icons[record.titleid] = assets.add(f"icon-{record.titleid}", extension, content)
+        originals[record.titleid] = original
+
+    # Each app's ambient picture and main colour, for the themes that show them. The colours
+    # go into the stylesheet as one rule per app: the pages carry no inline styles.
+    ambients: dict[str, str] = {}
+    accents: dict[str, str] = {}
+    style = (theme_obj.directory / "style.css").read_bytes()
+    if theme in AMBIENT_THEMES:
+        plain = make_ambient(None)
+        for record in records:
+            made = make_ambient(originals.get(record.titleid)) if record.titleid in originals else plain
+            if made is None:      # no Pillow: the theme's own picture and colour
+                ambients[record.titleid] = assets.add("ambient", "png", (theme_obj.directory / "field.png").read_bytes())
+                accents[record.titleid] = "#42358f"
+                continue
+            ambients[record.titleid] = assets.add(f"ambient-{record.titleid}", "png", made[0])
+            accents[record.titleid] = made[1]
+        style += b"\n/* Each app's main colour, from its icon. */\n" + "".join(
+            f".tone-{titleid}{{--tone:{colour}}}\n" for titleid, colour in sorted(accents.items())).encode()
+    css = assets.add(f"{theme}", "css", style)
     if icon_cache and icon_cache.is_dir() and fetch_icons:
         wanted = {hashlib.sha256(r.data["icon_url"].encode()).hexdigest() + ".img"
                   for r in records if r.data["icon_url"]}
@@ -394,6 +533,9 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
     kinds = {kind: [r for r in records if r.data["kind"] == kind] for kind in KINDS}
     total = len(records)
     updated = last_updated(apps_dir)
+    # Release facts (size, dates), asked once: the pages show the size, the API publishes all.
+    from . import facts as release_facts
+    known = {r.titleid: release_facts.cached(r, github, icon_cache) for r in records}
 
     def page_url(record: Record) -> str:
         return f"{base}app/{record.titleid}/"
@@ -407,6 +549,9 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
             kind_label=e(KIND_LABELS[d["kind"]]),
             status="soon" if record.reserved else "available",
             format="",
+            ambient=e(ambients.get(record.titleid, "")),
+            accent=e(accents.get(record.titleid, "")),
+            size_label=e(size_label(known[record.titleid][0].size)),
         )
         if not record.reserved:
             fmt = artifact_format(record)
@@ -569,7 +714,7 @@ def build_site(out: Path, apps_dir: Path, report: Report, base: str = DEFAULT_BA
     write_api(root / "api" / API_VERSION, f"{site_url}{base}api/{API_VERSION}/", records, report,
               updated=updated, page=lambda r: site_url + page_url(r), icons=api_icons, icon_hashes=icon_hashes,
               commit=commit,
-              github=github, cache=icon_cache)
+              github=github, cache=icon_cache, known=known)
 
     # Cloudflare Pages configuration.
     csp = ("default-src 'self'; img-src 'self' data:; style-src 'self' https://fonts.googleapis.com; "

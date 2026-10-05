@@ -10,32 +10,38 @@ Actions on every push to `main`. There is no server-side code, database or track
 dist/
 ├── _headers, _redirects        Cloudflare Pages security headers, caching, redirects
 ├── 404.html, robots.txt
-├── index.html                  the catalog: cards, or a compact list (?view=list)
+├── index.html                  the catalog: Discover, and a section each for apps, games, tools and coming soon
 ├── tv/                         TV mode: the catalog as a 10-foot interface
 ├── app/<TITLEID>/              one page per app: download, install steps, sha256
 ├── api/v1/                     the store API: per-app files, index, versions, PNG icons, signed manifest
 ├── catalog/v1.json             the older single-file feed
-└── assets/                     content-hashed CSS, JS and WebP icons
+└── assets/                     content-hashed CSS, JS, WebP icons and each app's ambient picture
 ```
 
-- **One catalog page, two views.** `/` holds both the cards and the list;
-  the Cards/List switch changes view in place. Search, type chips, status
-  (available or coming soon), format and sort apply to both and live in the URL
-  (`?q=…&kind=game&sort=updated&dir=asc&view=list`), so any filtered view can be
-  linked. The old `/list/` redirects there. The site used to live under
-  `/ps5/`; every `/ps5/…` URL redirects to the same page at the root.
-- **Sorting.** By name, updated date, developer, type or title ID, ascending or
-  descending (the ↑/↓ button). In the list view, clicking a column header sorts
-  by it, and clicking it again reverses the order. Updated dates default to newest
-  first; everything else defaults to A to Z.
-- **In-page navigation.** Opening an app fetches its static page and swaps its
-  content in without reloading; Back returns to the catalog with the same
-  filters, view, scroll position and focus. Every app page is still a complete
-  HTML page, so direct links, link previews, search engines and browsers
-  without JavaScript all work.
-- **Mobile-first layout.** On phones the cards form two columns, the list
-  collapses to icon, name, a one-line summary and a download button, and the
-  type chips scroll sideways.
+- **One catalog page, as a store front.** `/` opens on **Discover**: a stage
+  that shows one app big (the five newest in turn, eight seconds each, or the
+  tile under the pointer) over shelves: New and updated, Apps, Games, Tools,
+  Coming soon. The tabs in the top bar switch to a section, which is a grid of
+  the same tiles. The section, the search and the order live in the URL
+  (`?section=games&q=…&sort=updated`), so any view can be linked. The old
+  `/list/` and `?view=list` addresses open the catalog. The site used to live
+  under `/ps5/`; every `/ps5/…` URL redirects to the same page at the root.
+- **Search and order.** The search box (or `/`) finds apps by name, developer,
+  title ID or description, across every section. A section is ordered by name
+  or by most recently updated.
+- **An app's page** is a complete static page: the app over its own colours,
+  its facts as chips (version, size, licence, format), a panel with the
+  download, the install steps and the SHA-256. Direct links, link previews and
+  search engines see everything.
+- **Each app's colours come from its icon.** The build takes the icon's two
+  main hues and paints a small soft picture from them (96 x 54 pixels), used
+  behind the app on the stage, on its tile and on its page, and puts the main
+  hue in the stylesheet as that app's accent. This is the picture ProsperoStore
+  makes on the console, by the same rules. A grey icon gets the theme's violet.
+  It needs Pillow; without it every app gets the theme's own picture.
+- **Phones.** The top bar wraps and its tabs scroll sideways, shelves scroll
+  with a finger, grids go to two columns and then one, and an app's download
+  panel moves up under its name.
 - **Updated dates.** Each app shows when its record last changed on `main`,
   taken from the git history of `apps/<TITLEID>.json`. The build deepens a
   shallow clone first so dates stay correct in CI.
@@ -47,10 +53,12 @@ dist/
   installed) and served from the site, so visitors never hit the original host.
   The deploy job keeps them in a CI cache, so each icon URL is fetched only once
   across deploys. A broken icon becomes a placeholder with a build warning.
-- Filtering waits for a pause in typing and only updates the view on screen;
-  at 1,000 apps a filter change takes a few milliseconds.
-- Pages work without JavaScript; the script adds search, filters, sorting,
-  copy buttons and card effects.
+- Search waits for a pause in typing. A shelf shows at most 20 tiles; its
+  section shows them all.
+- Without JavaScript the catalog page is the plain grid of every app, and every
+  app page is complete; the script adds Discover, the sections, search, the
+  order and the copy buttons. The pages carry no inline styles or scripts, as
+  the content security policy requires.
 - The build fails, and Cloudflare keeps the previous deployment, if any record
   is invalid.
 
@@ -129,11 +137,20 @@ listed separately in `coming_soon`. Both are sorted by title ID. `updated` is
 
 ## Design
 
-The site uses the Holo theme: a collector's binder where every app is a
-holographic trading card with foil, tilt and a numbered strip. Its templates and
-stylesheet are in `site/themes/holo/`; `site/shared/` holds the script and
-images. The generator can host further themes in `site/themes/` and select them
-with `--theme`.
+The site uses the **Farlight** theme: ProsperoStore's own look, so the catalog
+looks the same on the web and on the console. From the store it takes the
+colours (a warm white for all words, a deep indigo, a violet mid tone and one
+gold for calls to action), the faces (Inter, and Montserrat for headlines), the
+measurements (the stylesheet's unit is one pixel of the store's 1920 x 1080
+canvas), the stage, shelves and tiles of its Discover screen, and the glass
+panel of its app page. Its templates, stylesheet and script are in
+`site/themes/farlight/`.
+
+The earlier **Holo** theme (every app a holographic trading card, with a list
+view and format filters) is still in `site/themes/holo/` and builds with
+`--theme holo`; `site/shared/` holds its script and the images both themes
+use. A theme may bring its own `app.js` and `favicon.svg`; otherwise the
+shared ones are used.
 
 ## Build and preview locally
 

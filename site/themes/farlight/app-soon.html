@@ -1,0 +1,37 @@
+<article class="page page--soon tone-$titleid" data-accent="$accent" aria-labelledby="app-title">
+  <div class="page__art" aria-hidden="true"><img src="$ambient" alt="" width="96" height="54"></div>
+  <div class="page__shade" aria-hidden="true"></div>
+  <div class="page__inner">
+    <div class="page__main">
+      <a class="back" href="$base"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>All apps</a>
+      <div class="page__cover"><img src="$icon" alt="Coming soon" width="512" height="512"><span class="page__sheen" aria-hidden="true"></span></div>
+      <p class="kicker kicker--plain">$kind_label</p>
+      <h1 class="page__title" id="app-title">$name</h1>
+      <p class="page__line">$author<span class="sep" aria-hidden="true">·</span>Reserved <time datetime="$updated_iso">$updated</time></p>
+      <ul class="chips" aria-label="Status">
+        <li>Coming soon</li>
+        <li>$titleid</li>
+      </ul>
+      <div class="article">
+        <p class="article__lead">$description</p>
+        <h2>Not released yet</h2>
+        <p>$author has reserved title ID <code>$titleid</code> for this $kind. Its download, source and icon appear here when the first release is listed.</p>
+        <h2 id="details-title">Details</h2>
+        <dl class="facts">
+          <div><dt>Title ID</dt><dd>$titleid</dd></div>
+          <div><dt>Status</dt><dd>Reserved</dd></div>
+          <div><dt>Reserved</dt><dd><time datetime="$updated_iso">$updated</time></dd></div>
+        </dl>
+      </div>
+    </div>
+    <aside class="side" aria-label="Status">
+      <div class="panel">
+        <p class="panel__kicker">Get this app</p>
+        <div class="panel__ring panel__ring--rest" aria-hidden="true"><svg viewBox="0 0 48 48" width="56" height="56"><circle cx="24" cy="24" r="3.5" fill="currentColor"/><path d="M24 10v14l8 6" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <p class="panel__headline">Coming soon</p>
+        <p class="panel__note">No release has been published yet</p>
+        <p class="panel__reason panel__reason--centre">It will appear here when it is released.</p>
+      </div>
+    </aside>
+  </div>
+</article>
