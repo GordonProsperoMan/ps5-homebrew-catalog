@@ -7,12 +7,22 @@ A community-maintained index of **native PS5 homebrew apps**. Each app is one
 small JSON record that points to a release file its developer hosts in their
 own GitHub Releases. This repository stores no binaries.
 
+> [!IMPORTANT]
+> **This catalog is an aggregator.** It lists apps; it doesn't build, maintain
+> or support them. Each app belongs to its own developer. For a bug, a question
+> or a feature request about an app, go to that app's GitHub repository (the
+> **Source code** link on its page at [homebrew.page](https://homebrew.page/),
+> or `source_repo` in its record) and contact its developer there. Issues here
+> are for the catalog itself: a wrong or broken listing, the website or the
+> store API.
+
 **Native apps only.** Every listing is an application built for the PS5 that
 installs as a title with its own title ID (`eboot.bin` and `sce_sys/`). ELF
 payloads, PS4 packages, backports, emulator ROMs and web pages aren't listed.
 
-The records here are the source of the [PS5 homebrew website](https://homebrew.page/),
-and they will feed a console-side store that can install listed apps.
+The records here are the source of the [PS5 homebrew website](https://homebrew.page/)
+and of the store API that [ProsperoStore](https://github.com/blackbearreloaded/ProsperoStore)
+reads to install listed apps on the console.
 
 ## How it works
 
