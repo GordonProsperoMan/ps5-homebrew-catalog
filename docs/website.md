@@ -197,6 +197,36 @@ access to this repository.
   and the project's `*.pages.dev` name. Keep WHOIS privacy on for the domain;
   Cloudflare Registrar redacts owner details by default.
 
+### Fallback deploy
+
+When GitHub's hosted runners are down, merges reach `main` but the site stays
+on the previous build. [Deploy fallback](../.github/workflows/deploy-fallback.yml)
+runs the same deploy on a machine the maintainer controls.
+
+- **It never runs by itself.** Its only trigger is a manual start, the job
+  requires the repository owner and `main`, and it targets a runner labelled
+  `catalog-fallback`. No pull request, push or schedule can reach that runner.
+- **No runner is kept registered.** The maintainer registers one for a single
+  job (`config.sh --ephemeral --labels catalog-fallback`), starts it, runs the
+  workflow, and the runner unregisters itself when the job ends. Never install
+  it as a service: a standing self-hosted runner on a public repository is the
+  risk, not this file.
+- **The secrets stay in GitHub** and reach the job through the
+  `cloudflare-pages` environment, as in the normal deploy.
+- **The machine needs** Python 3 with Pillow and `cryptography`, `git` and
+  `curl`; Node is fetched by the workflow.
+
+```sh
+cd ~/actions-runner
+./config.sh --unattended --ephemeral --replace --name fallback --labels catalog-fallback \
+    --url https://github.com/<owner>/ps5-homebrew-catalog \
+    --token "$(gh api -X POST repos/<owner>/ps5-homebrew-catalog/actions/runners/registration-token -q .token)"
+./run.sh &                                   # "Listening for Jobs"
+gh workflow run deploy-fallback.yml --repo <owner>/ps5-homebrew-catalog
+```
+
+The workflow repeats the deploy job of `ci.yml`; change both together.
+
 ### One-time setup
 
 1. **No project to create by hand.** The deploy job creates the Pages project

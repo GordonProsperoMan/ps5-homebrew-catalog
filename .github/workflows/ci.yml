@@ -53,6 +53,7 @@ jobs:
   deploy:
     name: Deploy website to Cloudflare Pages
     # Only trusted code on main reaches this job: it never runs for pull requests.
+    # deploy-fallback.yml repeats these steps for an Actions outage: change both together.
     # It is skipped until the CLOUDFLARE_PAGES_PROJECT repository variable exists.
     needs: [tests, verify]
     if: >-
