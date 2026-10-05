@@ -300,17 +300,19 @@ html:not(.js) .sort { display: none; }
   overflow: hidden;
   isolation: isolate;
   background: linear-gradient(180deg, #3a3170, #14142c);
-  box-shadow: inset 0 0 0 1.5px rgba(244, 239, 230, 0.1);
+  outline: 1.5px solid rgba(244, 239, 230, 0.1); outline-offset: -1.5px;
   transition: transform 0.24s var(--ease), box-shadow 0.24s ease;
   animation: arrive 0.4s var(--ease) backwards;
 }
 /* Resting tiles sit back a little: a veil that lifts when the tile holds the focus. Nothing in
    a tile is filtered or moved on its own, so the browser draws the whole tile in one piece and
-   its rounded corners stay clean while it is scaled up. */
+   its rounded corners stay clean while it is scaled up. The hairline around a tile is an outline
+   for the same reason: Firefox builds an inset shadow on a rounded box from corner pieces, and
+   on a scaled tile their seams showed as lines near the corners. */
 .tile::before { content: ""; position: absolute; inset: 0; z-index: -1; background: rgba(9, 9, 22, 0.26); transition: opacity 0.24s ease; }
 @keyframes arrive { from { opacity: 0; transform: translateY(calc(18 * var(--u))); } }
 .tile__field { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
-.tile__shade { position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: linear-gradient(180deg, rgba(9, 9, 22, 0) 34%, rgba(9, 9, 22, 0.62)); box-shadow: inset 0 0 0 1.5px rgba(244, 239, 230, 0.1); }
+.tile__shade { position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: linear-gradient(180deg, rgba(9, 9, 22, 0) 34%, rgba(9, 9, 22, 0.62)); }
 .tile__icon { position: absolute; left: 50%; top: 40%; height: 48%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 22%; box-shadow: 0 0 0 1px rgba(244, 239, 230, 0.2), 0 0 calc(60 * var(--u)) calc(2 * var(--u)) var(--tone-glow, rgba(120, 108, 200, 0.35)); }
 .tile__icon img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
 .tile__name { position: absolute; left: calc(20 * var(--u)); right: calc(20 * var(--u)); bottom: calc(33 * var(--u)); font: 600 calc(24 * var(--u))/1.2 var(--body); color: rgba(244, 239, 230, 0.92); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
