@@ -384,11 +384,12 @@ def open_listing_pr(candidate, repository: str, github: GitHub, open_files: dict
 
 
 def cmd_discover(args) -> int:
-    from .discover import MAX_NEW_PULLS, discover, publish, read_ignore, render
+    from .discover import MAX_NEW_PULLS, discover, publish, read_ignore, read_scope, render
     repository = os.environ.get("GITHUB_REPOSITORY", "")
     github = GitHub()
     result = discover(github, APPS, read_ignore(ROOT / "discovery" / "ignore.txt"), own_repo=repository,
-                      max_repos=args.max_repos)
+                      max_repos=args.max_repos,
+                      out_of_scope=read_scope(os.environ.get("DISCOVERY_SCOPE", "")))
     ready = sorted((c for c in result.candidates if c.status == "ready"), key=lambda c: c.repo.casefold())
     if args.open_prs:
         open_files = github.open_pull_files(repository)

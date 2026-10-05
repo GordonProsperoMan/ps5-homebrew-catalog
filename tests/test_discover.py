@@ -6,6 +6,7 @@ from unittest import mock
 
 from catalog import draft as draft_module
 from catalog.discover import (clean_text, discover, first_paragraph, previous_state, pull_request_text, read_ignore,
+                              read_scope,
                               render, shorten)
 
 from helpers import record, write_record
@@ -94,6 +95,17 @@ class DiscoverTests(unittest.TestCase):
     def test_ignore_list(self):
         found = self.run_discover(ignore={"dev/player"})
         self.assertEqual(found["Dev/Player"].status, "ignored")
+
+    def test_scan_scope(self):
+        github = FakeGitHub()
+        github.owner.setdefault("example", [])
+        result = discover(github, self.apps, set(), sleep=lambda s: None,
+                          out_of_scope=read_scope("@Dev, someone-else
+"))
+        self.assertEqual({c.repo for c in result.candidates}, {"example/example-app", "Other/Desktop-Tool"})
+        self.assertNotIn("dev", render(result).casefold().replace("developer", ""))
+        self.assertEqual(result.warnings, [])
+        self.assertEqual(read_scope(""), set())
 
     def test_ready_record_is_complete_with_labelled_guesses(self):
         player = self.run_discover()["Dev/Player"]

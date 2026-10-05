@@ -64,3 +64,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.token.outputs.token }}
           ISSUE_TOKEN: ${{ github.token }}
+          DISCOVERY_SCOPE: ${{ secrets.DISCOVERY_SCOPE }}

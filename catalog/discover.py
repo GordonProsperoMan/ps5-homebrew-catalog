@@ -110,9 +110,18 @@ def read_ignore(path: Path) -> set[str]:
     return names
 
 
-def _add(found: dict[str, Candidate], repo: dict, signal: str, strong: bool) -> None:
+def read_scope(value: str) -> set[str]:
+    """The scan scope setting from DISCOVERY_SCOPE: names separated by commas or white space."""
+    return {name.strip().lstrip("@").casefold() for name in value.replace(",", " ").split() if name.strip()}
+
+
+def _add(found: dict[str, Candidate], repo: dict, signal: str, strong: bool,
+         out_of_scope: frozenset[str] | set[str] = frozenset()) -> None:
     name = repo.get("full_name")
     if not name or repo.get("private"):
+        return
+    # Scope is settled first, so nothing outside it costs a lookup.
+    if name.split("/")[0].casefold() in out_of_scope:
         return
     candidate = found.setdefault(name.casefold(), Candidate(name))
     candidate.signals.add(signal)
@@ -122,7 +131,8 @@ def _add(found: dict[str, Candidate], repo: dict, signal: str, strong: bool) -> 
         candidate.signals.add("fork")
 
 
-def collect(github: GitHub, listed_owners: set[str], warnings: list[str], sleep=time.sleep) -> dict[str, Candidate]:
+def collect(github: GitHub, listed_owners: set[str], warnings: list[str], sleep=time.sleep,
+            out_of_scope: frozenset[str] | set[str] = frozenset()) -> dict[str, Candidate]:
     found: dict[str, Candidate] = {}
     for index, (query, signal, strong) in enumerate(CODE_QUERIES):
         for page in range(1, CODE_PAGES + 1):
@@ -135,7 +145,7 @@ def collect(github: GitHub, listed_owners: set[str], warnings: list[str], sleep=
                 break
             items = result.get("items", [])
             for item in items:
-                _add(found, item.get("repository") or {}, signal, strong)
+                _add(found, item.get("repository") or {}, signal, strong, out_of_scope)
             if len(items) < 100:
                 break
     for query, signal in REPO_QUERIES:
@@ -146,10 +156,11 @@ def collect(github: GitHub, listed_owners: set[str], warnings: list[str], sleep=
             continue
         for item in items:
             if not item.get("archived"):
-                _add(found, item, signal, False)
+                _add(found, item, signal, False, out_of_scope)
 
     # Developers with a listed or strongly signalled app often publish more than one.
-    owners = sorted(listed_owners | {c.repo.split("/")[0].casefold() for c in found.values() if c.strong})
+    owners = sorted((listed_owners | {c.repo.split("/")[0].casefold() for c in found.values() if c.strong})
+                    - set(out_of_scope))
     cutoff = datetime.now(timezone.utc).timestamp() - OWNER_ACTIVE_DAYS * 86400
     for owner in owners[:MAX_OWNERS]:
         try:
@@ -162,7 +173,7 @@ def collect(github: GitHub, listed_owners: set[str], warnings: list[str], sleep=
             if repo.get("fork") or repo.get("archived") or not pushed or _timestamp(pushed) < cutoff:
                 continue
             signal = "developer has a listed app" if owner in listed_owners else "developer of a candidate"
-            _add(found, repo, signal, False)
+            _add(found, repo, signal, False, out_of_scope)
     if len(owners) > MAX_OWNERS:
         warnings.append(f"only the first {MAX_OWNERS} of {len(owners)} developers were scanned")
     return found
@@ -287,13 +298,14 @@ def complete(candidate: Candidate, github: GitHub) -> str | None:
 
 
 def discover(github: GitHub, apps_dir: Path, ignore: set[str], own_repo: str = "",
-             max_repos: int = MAX_REPOS, sleep=time.sleep) -> Result:
+             max_repos: int = MAX_REPOS, sleep=time.sleep,
+             out_of_scope: frozenset[str] | set[str] = frozenset()) -> Result:
     started = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     records = [r for r in load_catalog(apps_dir, Report()) if not r.reserved]
     listed = {r.data["source_repo"].removeprefix("https://github.com/").casefold() for r in records}
     listed_owners = {r.owner.casefold() for r in records}
     warnings: list[str] = []
-    found = collect(github, listed_owners, warnings, sleep)
+    found = collect(github, listed_owners, warnings, sleep, out_of_scope)
 
     candidates = []
     for key, candidate in found.items():
