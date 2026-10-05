@@ -99,6 +99,54 @@ Read **[Submitting an app](docs/submitting.md)**. In short:
 3. Add `apps/<TITLEID>.json` from the account that owns that repository.
 4. Open a pull request and fix anything the checks report.
 
+## Write release notes
+
+The text you write on your GitHub release is your app's **release notes** in
+the catalog: it appears on the app's page and in the store API, where
+ProsperoStore and other clients can show it. You write it in one place, on the
+release, and nothing goes in the record. Notes are optional, and the catalog
+picks up later edits within about a day of the next site build.
+
+The catalog reads GitHub Markdown and keeps only **headings, paragraphs and
+lists** (with bold and inline code on the website). A console shows it as plain
+text. So:
+
+- **Start with what changed.** The website shows about the first 1,800
+  characters and the API the first 4,000, cut at the end of a line, with a link
+  to the full release. Put changes first; install steps, requirements and
+  hashes last.
+- **Use short headings and flat bullet lists**, such as `### Added`, `### Fixed`
+  and `### Changed`. Nested lists are flattened, and a table becomes one line
+  per row.
+- **Don't rely on images, badges, links or HTML.** Images and badges are
+  dropped, a link keeps its text but not its address, and HTML tags are
+  removed. Write "see the README" rather than "click here".
+- **Write it yourself.** A release with no text, or with only GitHub's generated
+  "Full Changelog" link or "What's Changed" list heading, has no notes in the
+  catalog.
+- **Keep it readable as plain text**, in any language. Emoji and unusual symbols
+  may not exist in a console's font.
+
+A release body that reads well everywhere:
+
+```markdown
+A small update with fixes and two new languages.
+
+### Added
+- Spanish and French. The app follows the console's language.
+
+### Fixed
+- The detail page no longer shifts its buttons while it loads.
+- Playback resumes at the right position after rest mode.
+
+### Install
+Unzip `PPSA12345.zip` and copy the `PPSA12345` folder to `/data/homebrew/`.
+```
+
+The notes are yours: the catalog shows them as your words and doesn't review
+them. [Store API: release notes](docs/api.md#release-notes) has the exact
+format clients receive.
+
 ## Record format
 
 One file per app, named after its title ID, with exactly these eleven string fields:

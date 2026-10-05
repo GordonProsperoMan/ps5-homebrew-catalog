@@ -62,6 +62,11 @@ it, so the tag points at the value the release ships. Tagging releases with
 the content version itself (`01.000.005`) keeps everything in one number.
 [App versions](versioning.md) has the rules and a release checklist.
 
+Write the release's description with care: it becomes your app's release
+notes on the website and in the store. Put what changed first, under short
+headings with bullet lists; images, links and HTML aren't carried over. See
+[Write release notes](../README.md#write-release-notes).
+
 Use a new tag and a new asset for every version; never replace the asset of a
 release that is already listed, because its sha256 would no longer match. Enabling GitHub's
 [immutable releases](https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/immutable-releases)

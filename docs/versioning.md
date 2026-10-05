@@ -92,7 +92,9 @@ Neither of these blocks a listing; they are there so you notice.
 
 1. Raise `contentVersion` in `sce_sys/param.json` and commit it.
 2. Build from that commit, so the shipped `param.json` has the same value.
-3. Tag that commit and publish the GitHub release with the artifact attached.
+3. Tag that commit and publish the GitHub release with the artifact attached
+   and a description of what changed: it is shown as the app's
+   [release notes](../README.md#write-release-notes).
 4. The catalog's daily update job proposes the new release; nothing else to do
    (see [Updating your app](submitting.md#updating-your-app)).
 
