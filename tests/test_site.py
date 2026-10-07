@@ -156,8 +156,11 @@ class SiteBuildTests(unittest.TestCase):
         self.assertIn("<li>Menus open faster alert(1)</li>", page)
         self.assertNotIn("<script>alert", page)
         self.assertIn('rel="nofollow">See this release on GitHub</a>', page)
-        self.assertEqual(app["icon"], "https://homebrew.page/api/v1/icons/PPSA01234.png")
-        self.assertEqual(app["icon_small"], "https://homebrew.page/api/v1/icons/PPSA01234-256.png")
+        # An icon's address changes with the picture, so no cache can answer it with an older one.
+        import hashlib
+        fingerprint = hashlib.sha256(png).hexdigest()[:16]
+        self.assertEqual(app["icon"], f"https://homebrew.page/api/v1/icons/PPSA01234.png?v={fingerprint}")
+        self.assertEqual(app["icon_small"], f"https://homebrew.page/api/v1/icons/PPSA01234-256.png?v={fingerprint}")
         self.assertEqual((api / "icons" / "PPSA01234-256.png").read_bytes(), b"small")
         # The fingerprint is of the developer's image, so it changes only when that image does.
         import hashlib

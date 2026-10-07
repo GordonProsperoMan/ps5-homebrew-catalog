@@ -57,8 +57,8 @@ still published and unchanged; new clients should use the API.
   "release_notes_truncated": true,
   "updated": "2026-09-29T17:20:37Z",
   "page": "https://homebrew.page/app/PPSA99039/",
-  "icon": "https://homebrew.page/api/v1/icons/PPSA99039.png",
-  "icon_small": "https://homebrew.page/api/v1/icons/PPSA99039-256.png",
+  "icon": "https://homebrew.page/api/v1/icons/PPSA99039.png?v=5b0c1e7a9d3f4a26",
+  "icon_small": "https://homebrew.page/api/v1/icons/PPSA99039-256.png?v=5b0c1e7a9d3f4a26",
   "icon_hash": "5b0c1e7a9d3f4a26"
 }
 ```
@@ -326,6 +326,13 @@ should download each one once and keep it:
 3. Download the icon again only when they differ, or when you have none. When
    `icon_hash` is `null`, the app has no icon: show your placeholder.
 
+Always download from the address in `icon` or `icon_small`, exactly as given.
+It ends in `?v=` and the icon's fingerprint, so the address changes whenever
+the picture does, and a cache between you and the site can't answer with the
+previous picture. The plain addresses in [Files](#files) keep working, but a
+cache may serve an older picture from them for a few hours after an icon
+changes; don't build them yourself.
+
 An unchanged icon then costs no request at all. `icon_hash` covers both sizes,
 and it is independent of the app's version: a new release with the same image
 keeps it, and an image the developer replaces changes it. Treat it as an
@@ -377,6 +384,7 @@ icon, as for any other file, at the cost of one request per icon.
 | 1 | 2026-10-02 | First version: `versions.json`, `index.json`, `apps/<TITLEID>.json`, PNG icons. |
 | 2 | 2026-10-02 | Added `icon_hash` to app files and index entries, so clients can cache icons without requests. |
 | 3 | 2026-10-02 | Added `manifest.json` and `manifest.sig`: the catalog is signed. |
+| 3 | 2026-10-07 | `icon` and `icon_small` end in `?v=<icon_hash>`, so an icon's address changes with its picture. No field was added or renamed. |
 | 3 | 2026-10-05 | Added `release_notes` and `release_notes_truncated` to app files. `schema` stays 3: a released store accepts only that exact number, so it is raised with the next change that store has been prepared for. Test for the field, not for the number. |
 
 ## Where the values come from

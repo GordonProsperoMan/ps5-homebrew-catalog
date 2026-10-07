@@ -417,12 +417,16 @@ def write_api(root: Path, url: str, records: list[Record], report: Report, *, up
             report.notice(name, "no contentVersion found for this release; clients can't check it for updates")
         notes_text, notes_cut = release_notes.as_text(facts.notes)
         icon = {}
+        # The address carries the icon's fingerprint, so it changes when the picture does: a cache
+        # that still holds the previous picture can't answer for the new address.
+        fingerprint = icon_hashes.get(titleid)
+        version = f"?v={fingerprint}" if fingerprint else ""
         for size, suffix in ((large, ""), (small, f"-{small}")):
             content = icons.get(titleid, {}).get(size)
             if content:
                 (root / "icons").mkdir(parents=True, exist_ok=True)
                 (root / "icons" / f"{titleid}{suffix}.png").write_bytes(content)
-                icon[size] = f"{url}icons/{titleid}{suffix}.png"
+                icon[size] = f"{url}icons/{titleid}{suffix}.png{version}"
         app = {
             "schema": API_SCHEMA,
             **d,
